@@ -15,7 +15,7 @@ If this project helps you, you can support my work by:
 
 ---
 
-## 📺 Watch the Full Build on YouTube
+## Watch the Full Build on YouTube
 
 > In this video, you’ll build an AI-powered mobile design agent from scratch, covering architecture, AI workflows, canvas rendering, Png exports, and deployment.
 
@@ -28,21 +28,20 @@ If this project helps you, you can support my work by:
 - 🔐 Authentication with **Kinde**
 - 🤖 AI-powered mobile UI design agent
 - ✍️ Generate clean mobile designs from simple prompts
-- 🖼️ Draggable mobile canvas (real device feel)
+- 🖼️ Draggable mobile frame on canvas
 - 🎨 Customizable themes
 - 🔁 Regenerate designs instantly
 - 📸 Export designs as PNG
 - 🌄 Unsplash integration for real images
 - ⚡ Real-time design updates
-- 🌐 Built with **Next.js**
-- 🗄️ **MongoDB + Prisma** for persistence
-- 🪝 Background workflows with **Inngest**
+- 🪝 Background workflows with Inngest
+- 🌐 Built with Next.js, MongoDB, Prisma
 - 🎨 Styled with **Tailwind CSS**
 - 🚀 Production-ready architecture
 
 ---
 
-## 📜 License Information
+## License Information
 
 Commercial use requires a paid license.
 👉 [Get a Commercial License](https://techwithemma.gumroad.com/l/gaeytu)
