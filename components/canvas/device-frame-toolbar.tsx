@@ -42,6 +42,7 @@ type PropsType = {
   isSelected?: boolean;
   disabled?: boolean;
   isDownloading: boolean;
+  isExportDisabled?: boolean;
   scale?: number;
   isRegenerating?: boolean;
   isDeleting?: boolean;
@@ -56,6 +57,7 @@ const DeviceFrameToolbar = ({
   disabled,
   scale = 1.7,
   isDownloading,
+  isExportDisabled = false,
   isRegenerating = false,
   isDeleting = false,
   onOpenHtmlDialog,
@@ -135,7 +137,7 @@ const DeviceFrameToolbar = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    disabled={disabled || isDownloading}
+                    disabled={disabled || isDownloading || isExportDisabled}
                     size="icon-xs"
                     className="rounded-full!"
                     variant="ghost"

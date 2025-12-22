@@ -4,7 +4,7 @@ import Logo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { LogOutIcon, MoonIcon, SunIcon } from "lucide-react";
+import { LogOutIcon, MoonIcon, SunIcon, UserIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import {
@@ -17,10 +17,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const Header = () => {
+type HeaderProps = {
+  initialUser?: {
+    id?: string | null;
+    given_name?: string | null;
+    family_name?: string | null;
+    picture?: string | null;
+  };
+};
+
+const Header = ({ initialUser }: HeaderProps) => {
   const { theme, setTheme } = useTheme();
   const { user } = useKindeBrowserClient();
+  const resolvedUser = user ?? initialUser;
   const isDark = theme === "dark";
+
   return (
     <div className="sticky top-0 right-0 left-0 z-30">
       <header className="h-16 border-b bg-background py-4">
@@ -34,10 +45,16 @@ const Header = () => {
             className="hidden flex-1 items-center
           justify-center gap-8 md:flex"
           >
-            <Link href="/" className="text-foreground-muted text-sm">
+            <Link
+              href="/"
+              className="text-foreground-muted text-sm transition-colors hover:text-primary"
+            >
               Home
             </Link>
-            <Link href="/" className="text-foreground-muted text-sm">
+            <Link
+              href="/pricing"
+              className="text-foreground-muted text-sm transition-colors hover:text-primary"
+            >
               Pricing
             </Link>
           </div>
@@ -67,28 +84,50 @@ const Header = () => {
                 )}
               />
             </Button>
-            {user ? (
+            {resolvedUser ? (
               <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Avatar
-                    className="h-8 w-8
-                  shrink-0 rounded-full"
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-8 w-8 p-0"
                   >
-                    <AvatarImage
-                      src={user?.picture || ""}
-                      alt={user?.given_name || ""}
-                    />
-                    <AvatarFallback className="rounded-lg">
-                      {user?.given_name?.charAt(0)}
-                      {user?.family_name?.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
+                    <Avatar className="h-8 w-8 bg-muted text-foreground">
+                      <AvatarImage
+                        src={resolvedUser?.picture ?? undefined}
+                        alt={resolvedUser?.given_name ?? "User profile"}
+                      />
+                      <AvatarFallback>
+                        {resolvedUser?.given_name?.charAt(0) ||
+                        resolvedUser?.family_name?.charAt(0) ? (
+                          <>
+                            {resolvedUser?.given_name?.charAt(0)}
+                            {resolvedUser?.family_name?.charAt(0)}
+                          </>
+                        ) : (
+                          <UserIcon className="h-4 w-4" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <LogoutLink className="w-full flex items-center">
+                    <Link href="/account" className="w-full text-sm">
+                      Account
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link href="/billing" className="w-full text-sm">
+                      Billing
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <LogoutLink className="w-full flex items-center gap-2">
                       <LogOutIcon className="size-4" />
                       Logout
                     </LogoutLink>

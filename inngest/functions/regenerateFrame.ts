@@ -1,6 +1,6 @@
-import { generateText, stepCountIs } from "ai";
+import { fromChatMessages, stepCountIs } from "@openrouter/sdk";
 import { inngest } from "../client";
-//import { openrouter } from "@/lib/openrouter";
+import { callOpenRouterText } from "@/lib/openrouter-fallback";
 import { GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
 import prisma from "@/lib/prisma";
 import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
@@ -39,14 +39,12 @@ export const regenerateFrame = inngest.createFunction(
         ${selectedTheme?.style || ""}
       `;
 
-      const result = await generateText({
-        model: "google/gemini-3-pro-preview",
-        system: GENERATION_SYSTEM_PROMPT,
-        tools: {
-          searchUnsplash: unsplashTool,
-        },
-        stopWhen: stepCountIs(5),
-        prompt: `
+      const finalHtml = await callOpenRouterText({
+        input: fromChatMessages([
+          { role: "system", content: GENERATION_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: `
         USER REQUEST: ${prompt}
 
         ORIGINAL SCREEN TITLE: ${frame.title}
@@ -82,12 +80,14 @@ export const regenerateFrame = inngest.createFunction(
             - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
         Generate the complete, production-ready HTML for this screen now
         `.trim(),
+          },
+        ]),
+        tools: [unsplashTool],
+        stopWhen: stepCountIs(5),
       });
 
-      let finalHtml = result.text ?? "";
       const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-      finalHtml = match ? match[0] : finalHtml;
-      finalHtml = finalHtml.replace(/```/g, "");
+      const cleanedHtml = (match ? match[0] : finalHtml).replace(/```/g, "");
 
       // Update the frame
       const updatedFrame = await prisma.frame.update({
@@ -95,7 +95,7 @@ export const regenerateFrame = inngest.createFunction(
           id: frameId,
         },
         data: {
-          htmlContent: finalHtml,
+          htmlContent: cleanedHtml,
         },
       });
 

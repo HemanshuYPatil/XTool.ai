@@ -33,6 +33,7 @@ const Page = () => {
         initialThemeId={project?.theme}
         hasInitialData={hasInitialData}
         projectId={project?.id}
+        plan={project?.plan}
       >
         <div className="flex flex-1 overflow-hidden">
           <div className="relative flex-1">

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { generateProjectName } from "@/app/action/action";
 import { inngest } from "@/inngest/client";
+import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
 
 export async function GET() {
   try {
@@ -14,6 +15,7 @@ export async function GET() {
     const projects = await prisma.project.findMany({
       where: {
         userId: user.id,
+        deletedAt: null,
       },
       take: 10,
       orderBy: { createdAt: "desc" },
@@ -44,6 +46,20 @@ export async function POST(request: Request) {
     if (!prompt) throw new Error("Missing Prompt");
 
     const userId = user.id;
+    await ensureUserFromKinde(user);
+    const dbUser = await getUserWithSubscription(userId);
+    const plan = dbUser?.plan ?? "FREE";
+    if (plan === "FREE") {
+      const projectCount = await prisma.project.count({
+        where: { userId },
+      });
+      if (projectCount >= 1) {
+        return NextResponse.json(
+          { error: "Free plan allows only one active project." },
+          { status: 403 }
+        );
+      }
+    }
 
     const projectName = await generateProjectName(prompt);
 
@@ -62,6 +78,7 @@ export async function POST(request: Request) {
           userId,
           projectId: project.id,
           prompt,
+          plan,
         },
       });
     } catch (error) {

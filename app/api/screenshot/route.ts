@@ -2,6 +2,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
 // Cache the Chromium executable path to avoid re-downloading
 let cachedExecutablePath: string | null = null;
 let downloadPromise: Promise<string> | null = null;
@@ -43,6 +44,15 @@ export async function POST(req: Request) {
 
     if (!user) throw new Error("Unauthorized");
     const userId = user.id;
+    await ensureUserFromKinde(user);
+    const dbUser = await getUserWithSubscription(userId);
+    const plan = dbUser?.plan ?? "FREE";
+    if (!projectId && plan !== "PRO") {
+      return NextResponse.json(
+        { error: "Pro plan required to export images." },
+        { status: 403 }
+      );
+    }
 
     //Detect environment
     const isProduction = process.env.NODE_ENV === "production";

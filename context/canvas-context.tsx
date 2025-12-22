@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useInngestSubscription } from "@inngest/realtime/hooks";
 import { fetchRealtimeSubscriptionToken } from "@/app/action/realtime";
-import { THEME_LIST, ThemeType } from "@/lib/themes";
+import { getThemesForPlan, ThemeType } from "@/lib/themes";
 import { FrameType } from "@/types/project";
 import {
   createContext,
@@ -23,6 +23,7 @@ interface CanvasContextType {
   theme?: ThemeType;
   setTheme: (id: string) => void;
   themes: ThemeType[];
+  plan?: string;
 
   frames: FrameType[];
   setFrames: (frames: FrameType[]) => void;
@@ -45,15 +46,23 @@ export const CanvasProvider = ({
   initialThemeId,
   hasInitialData,
   projectId,
+  plan,
 }: {
   children: ReactNode;
   initialFrames: FrameType[];
   initialThemeId?: string;
   hasInitialData: boolean;
   projectId: string | null;
+  plan?: string;
 }) => {
+  const availableThemes = getThemesForPlan(plan);
+  const fallbackThemeId = availableThemes[0]?.id;
+  const resolvedInitialTheme =
+    initialThemeId && availableThemes.some((theme) => theme.id === initialThemeId)
+      ? initialThemeId
+      : fallbackThemeId;
   const [themeId, setThemeId] = useState<string>(
-    initialThemeId || THEME_LIST[0].id
+    resolvedInitialTheme || ""
   );
 
   const [frames, setFrames] = useState<FrameType[]>(initialFrames);
@@ -68,11 +77,11 @@ export const CanvasProvider = ({
     setPrevProjectId(projectId);
     setLoadingStatus(hasInitialData ? "idle" : "running");
     setFrames(initialFrames);
-    setThemeId(initialThemeId || THEME_LIST[0].id);
+    setThemeId(resolvedInitialTheme || "");
     setSelectedFrameId(null);
   }
 
-  const theme = THEME_LIST.find((t) => t.id === themeId);
+  const theme = availableThemes.find((t) => t.id === themeId);
   const selectedFrame =
     selectedFrameId && frames.length !== 0
       ? frames.find((f) => f.id === selectedFrameId) || null
@@ -151,8 +160,13 @@ export const CanvasProvider = ({
     <CanvasContext.Provider
       value={{
         theme,
-        setTheme: setThemeId,
-        themes: THEME_LIST,
+        setTheme: (id: string) => {
+          if (availableThemes.some((t) => t.id === id)) {
+            setThemeId(id);
+          }
+        },
+        themes: availableThemes,
+        plan,
         frames,
         setFrames,
         selectedFrameId,

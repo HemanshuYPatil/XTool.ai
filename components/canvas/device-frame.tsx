@@ -40,7 +40,8 @@ const DeviceFrame = ({
   projectId,
   onOpenHtmlDialog,
 }: PropsType) => {
-  const { selectedFrameId, setSelectedFrameId, updateFrame } = useCanvas();
+  const { selectedFrameId, setSelectedFrameId, updateFrame, plan } =
+    useCanvas();
   const [frameSize, setFrameSize] = useState({
     width,
     height: minHeight,
@@ -72,6 +73,10 @@ const DeviceFrame = ({
 
   const handleDownloadPng = useCallback(async () => {
     if (isDownloading) return;
+    if (plan !== "PRO") {
+      toast.error("Upgrade to Pro to export images.");
+      return;
+    }
     setIsDownloading(true);
     try {
       const response = await axios.post(
@@ -100,7 +105,7 @@ const DeviceFrame = ({
     } finally {
       setIsDownloading(false);
     }
-  }, [frameSize.height, frameSize.width, fullHtml, isDownloading, title]);
+  }, [frameSize.height, frameSize.width, fullHtml, isDownloading, plan, title]);
 
   const handleRegenerate = useCallback(
     (prompt: string) => {
@@ -185,6 +190,7 @@ const DeviceFrame = ({
             deleteMutation.isPending
           }
           isDownloading={isDownloading}
+          isExportDisabled={plan !== "PRO"}
           isRegenerating={regenerateMutation.isPending}
           isDeleting={deleteMutation.isPending}
           onDownloadPng={handleDownloadPng}

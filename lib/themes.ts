@@ -744,6 +744,21 @@ export const THEME_LIST: ThemeType[] = [
   },
 ];
 
+export const FREE_THEME_IDS = [
+  "ocean-breeze",
+  "netflix",
+  "acid-lime",
+  "purple-yellow",
+];
+
+export const getThemesForPlan = (plan?: string) =>
+  plan === "PRO"
+    ? THEME_LIST
+    : THEME_LIST.filter((theme) => FREE_THEME_IDS.includes(theme.id));
+
+export const isThemeAllowedForPlan = (themeId: string, plan?: string) =>
+  plan === "PRO" || FREE_THEME_IDS.includes(themeId);
+
 export function parseThemeColors(style: string) {
   const colors: Record<string, string> = {};
   const matches = style.matchAll(/--([a-z-]+):\s*([^;]+)/g);

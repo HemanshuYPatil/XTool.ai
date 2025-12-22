@@ -25,8 +25,11 @@ export const useGenerateDesignById = (projectId: string) => {
       toast.success("Generation Started");
     },
     onError: (error) => {
+      const message =
+        (error as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? "Failed to generate screen";
       console.log("Project failed", error);
-      toast.error("Failed to generate screen");
+      toast.error(message);
     },
   });
 };
@@ -43,8 +46,11 @@ export const useUpdateProject = (projectId: string) => {
       toast.success("Project updated");
     },
     onError: (error) => {
+      const message =
+        (error as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? "Failed to update project";
       console.log("Project failed", error);
-      toast.error("Failed to update project");
+      toast.error(message);
     },
   });
 };

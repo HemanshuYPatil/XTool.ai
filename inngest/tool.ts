@@ -1,7 +1,8 @@
-import { tool } from "ai";
+import { tool } from "@openrouter/sdk";
 import { z } from "zod";
 
 export const unsplashTool = tool({
+  name: "searchUnsplash",
   description:
     "Search for high-quality images from Unsplash.  Use this when you need to add an <img> tag.",
   inputSchema: z.object({
@@ -22,9 +23,16 @@ export const unsplashTool = tool({
         }`
       );
       const { results } = await res.json();
-      return results?.[0]?.urls?.regular || ``;
+      if (results?.[0]?.urls?.regular) {
+        return results[0].urls.regular;
+      }
+      return `https://source.unsplash.com/featured/800x600?${encodeURIComponent(
+        query
+      )}`;
     } catch {
-      return ``;
+      return `https://source.unsplash.com/featured/800x600?${encodeURIComponent(
+        query
+      )}`;
     }
   },
 });

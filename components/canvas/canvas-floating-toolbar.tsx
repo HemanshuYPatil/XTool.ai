@@ -25,7 +25,8 @@ const CanvasFloatingToolbar = ({
   isScreenshotting: boolean;
   onScreenshot: () => void;
 }) => {
-  const { themes, theme: currentTheme, setTheme } = useCanvas();
+  const { themes, theme: currentTheme, setTheme, plan } = useCanvas();
+  const canExport = plan === "PRO";
   const [promptText, setPromptText] = useState<string>("");
 
   const { mutate, isPending } = useGenerateDesignById(projectId);
@@ -126,7 +127,7 @@ const CanvasFloatingToolbar = ({
                   className="flex items-center gap-1 text-sm
                 "
                 >
-                  +{themes?.length - 4} more
+                  +{Math.max((themes?.length ?? 0) - 4, 0)} more
                   <ChevronDown className="size-4" />
                 </div>
               </div>
@@ -148,7 +149,7 @@ const CanvasFloatingToolbar = ({
               variant="outline"
               size="icon-sm"
               className="rounded-full cursor-pointer"
-              disabled={isScreenshotting}
+              disabled={isScreenshotting || !canExport}
               onClick={onScreenshot}
             >
               {isScreenshotting ? (

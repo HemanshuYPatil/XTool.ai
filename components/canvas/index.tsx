@@ -32,6 +32,7 @@ const Canvas = ({
     setSelectedFrameId,
     loadingStatus,
     setLoadingStatus,
+    plan,
   } = useCanvas();
   const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.SELECT);
   const [zoomPercent, setZoomPercent] = useState<number>(53);
@@ -109,6 +110,10 @@ const Canvas = ({
 
   const handleCanvasScreenshot = useCallback(async () => {
     try {
+      if (plan !== "PRO") {
+        toast.error("Upgrade to Pro to export images.");
+        return;
+      }
       const result = getCanvasHtmlContent();
       if (!result?.html) {
         toast.error("Failed to get canvas content");
@@ -144,7 +149,7 @@ const Canvas = ({
     } finally {
       setIsScreenshotting(false);
     }
-  }, [projectName, setSelectedFrameId]);
+  }, [plan, projectName, setSelectedFrameId]);
 
   const currentStatus = isSaving
     ? "finalizing"

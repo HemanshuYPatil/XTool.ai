@@ -1,11 +1,16 @@
-import { generateObject, generateText, stepCountIs } from "ai";
+import { fromChatMessages, stepCountIs } from "@openrouter/sdk";
 import { inngest } from "../client";
 import { z } from "zod";
-//import { openrouter } from "@/lib/openrouter";
+import { callOpenRouterText } from "@/lib/openrouter-fallback";
 import { FrameType } from "@/types/project";
 import { ANALYSIS_PROMPT, GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
 import prisma from "@/lib/prisma";
-import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
+import {
+  BASE_VARIABLES,
+  THEME_LIST,
+  getThemesForPlan,
+  isThemeAllowedForPlan,
+} from "@/lib/themes";
 import { unsplashTool } from "../tool";
 
 const AnalysisSchema = z.object({
@@ -43,6 +48,50 @@ const AnalysisSchema = z.object({
     .max(4),
 });
 
+const AnalysisSchemaWithOptionalTheme = z.object({
+  theme: z.string().optional(),
+  screens: AnalysisSchema.shape.screens,
+});
+
+const extractJsonObject = (text: string) => {
+  const cleaned = text.replace(/```(?:json)?/g, "").trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  if (!match) {
+    throw new Error("Failed to extract JSON object from model response.");
+  }
+  return JSON.parse(match[0]);
+};
+
+const normalizeAnalysis = (raw: unknown, fallbackTheme: string) => {
+  const parsed = AnalysisSchemaWithOptionalTheme.parse(raw);
+  const theme = parsed.theme ?? fallbackTheme;
+  return AnalysisSchema.parse({ ...parsed, theme });
+};
+
+const getAnalysisObject = async (
+  analysisPrompt: string,
+  fallbackTheme: string
+) => {
+  const run = async (extraInstruction: string) => {
+    const analysisText = await callOpenRouterText({
+      input: fromChatMessages([
+        { role: "system", content: ANALYSIS_PROMPT },
+        {
+          role: "user",
+          content: `${analysisPrompt}\n\nReturn ONLY valid JSON matching the schema.${extraInstruction}`,
+        },
+      ]),
+    });
+    return normalizeAnalysis(extractJsonObject(analysisText), fallbackTheme);
+  };
+
+  try {
+    return await run("");
+  } catch (error) {
+    return await run(" No prose, no markdown, no code fences.");
+  }
+};
+
 export const generateScreens = inngest.createFunction(
   { id: "generate-ui-screens" },
   { event: "ui/generate.screens" },
@@ -54,6 +103,7 @@ export const generateScreens = inngest.createFunction(
 
       frames,
       theme: existingTheme,
+      plan,
     } = event.data;
     const CHANNEL = `user:${userId}`;
     const isExistingGeneration = Array.isArray(frames) && frames.length > 0;
@@ -87,10 +137,17 @@ export const generateScreens = inngest.createFunction(
             .join("\n\n")
         : "";
 
+      const themeRestriction =
+        plan === "PRO"
+          ? ""
+          : `\nALLOWED THEME IDS: ${getThemesForPlan(plan)
+              .map((t) => t.id)
+              .join(", ")}`;
       const analysisPrompt = isExistingGeneration
         ? `
           USER REQUEST: ${prompt}
           SELECTED THEME: ${existingTheme}
+          ${themeRestriction}
 
           EXISTING SCREENS (analyze for consistency navigation, layout, design system etc):
           ${contextHTML}
@@ -104,16 +161,21 @@ export const generateScreens = inngest.createFunction(
         `.trim()
         : `
           USER REQUEST: ${prompt}
+          ${themeRestriction}
         `.trim();
 
-      const { object } = await generateObject({
-        model: "google/gemini-3-pro-preview",
-        schema: AnalysisSchema,
-        system: ANALYSIS_PROMPT,
-        prompt: analysisPrompt,
-      });
+      const availableThemes = getThemesForPlan(plan);
+      const fallbackTheme =
+        availableThemes[0]?.id ?? THEME_LIST[0]?.id ?? "midnight";
+      const defaultTheme = existingTheme ?? fallbackTheme;
+      const object = await getAnalysisObject(analysisPrompt, defaultTheme);
 
-      const themeToUse = isExistingGeneration ? existingTheme : object.theme;
+      const maxScreens = plan === "PRO" ? 4 : 1;
+      const screens = object.screens.slice(0, maxScreens);
+      const rawTheme = isExistingGeneration ? existingTheme : object.theme;
+      const themeToUse = isThemeAllowedForPlan(rawTheme, plan)
+        ? rawTheme
+        : fallbackTheme;
 
       if (!isExistingGeneration) {
         await prisma.project.update({
@@ -131,13 +193,13 @@ export const generateScreens = inngest.createFunction(
         data: {
           status: "generating",
           theme: themeToUse,
-          totalScreens: object.screens.length,
-          screens: object.screens,
+          totalScreens: screens.length,
+          screens,
           projectId: projectId,
         },
       });
 
-      return { ...object, themeToUse };
+      return { ...object, screens, themeToUse };
     });
 
     // Actuall generation of each screens
@@ -164,14 +226,12 @@ export const generateScreens = inngest.createFunction(
         .join("\n\n");
 
       await step.run(`generated-screen-${i}`, async () => {
-        const result = await generateText({
-          model: "google/gemini-3-pro-preview",
-          system: GENERATION_SYSTEM_PROMPT,
-          tools: {
-            searchUnsplash: unsplashTool,
-          },
-          stopWhen: stepCountIs(5),
-          prompt: `
+        const finalHtml = await callOpenRouterText({
+          input: fromChatMessages([
+            { role: "system", content: GENERATION_SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: `
           - Screen ${i + 1}/${analysis.screens.length}
           - Screen ID: ${screenPlan.id}
           - Screen Name: ${screenPlan.name}
@@ -212,19 +272,23 @@ export const generateScreens = inngest.createFunction(
           - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
         Generate the complete, production-ready HTML for this screen now
       `.trim(),
+            },
+          ]),
+          tools: [unsplashTool],
+          stopWhen: stepCountIs(5),
         });
-
-        let finalHtml = result.text ?? "";
         const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-        finalHtml = match ? match[0] : finalHtml;
-        finalHtml = finalHtml.replace(/```/g, "");
+        const cleanedHtml = (match ? match[0] : finalHtml).replace(
+          /```/g,
+          ""
+        );
 
         //Create the frame
         const frame = await prisma.frame.create({
           data: {
             projectId,
             title: screenPlan.name,
-            htmlContent: finalHtml,
+            htmlContent: cleanedHtml,
           },
         });
 

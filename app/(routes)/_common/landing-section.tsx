@@ -4,17 +4,43 @@ import { formatDistanceToNow } from "date-fns";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import PromptInput from "@/components/prompt-input";
 import Header from "./header";
-import { useCreateProject, useGetProjects } from "@/features/use-project";
+import {
+  useCreateProject,
+  useDeleteProject,
+  useGetProjects,
+  useRenameProject,
+} from "@/features/use-project";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { Spinner } from "@/components/ui/spinner";
 import { ProjectType } from "@/types/project";
 import { useRouter } from "next/navigation";
-import { FolderOpenDotIcon } from "lucide-react";
+import {
+  FolderOpenDotIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
-const LandingSection = () => {
+type LandingSectionProps = {
+  initialUser?: {
+    id?: string | null;
+    given_name?: string | null;
+    family_name?: string | null;
+    picture?: string | null;
+  };
+};
+
+const LandingSection = ({ initialUser }: LandingSectionProps) => {
   const { user } = useKindeBrowserClient();
   const [promptText, setPromptText] = useState<string>("");
-  const userId = user?.id;
+  const userId = user?.id ?? initialUser?.id ?? undefined;
 
   const { data: projects, isLoading, isError } = useGetProjects(userId);
   const { mutate, isPending } = useCreateProject();
@@ -64,7 +90,7 @@ const LandingSection = () => {
   return (
     <div className=" w-full min-h-screen">
       <div className="flex flex-col">
-        <Header />
+        <Header initialUser={initialUser} />
 
         <div className="relative overflow-hidden pt-28">
           <div
@@ -146,6 +172,8 @@ const LandingSection = () => {
           </div>
         </div>
 
+      
+
         <div className="w-full py-10">
           <div className="mx-auto max-w-3xl">
             {userId && (
@@ -190,12 +218,32 @@ const LandingSection = () => {
 
 const ProjectCard = memo(({ project }: { project: ProjectType }) => {
   const router = useRouter();
+  const deleteProject = useDeleteProject();
+  const renameProject = useRenameProject();
   const createdAtDate = new Date(project.createdAt);
   const timeAgo = formatDistanceToNow(createdAtDate, { addSuffix: true });
   const thumbnail = project.thumbnail || null;
 
   const onRoute = () => {
     router.push(`/project/${project.id}`);
+  };
+
+  const onDelete = () => {
+    if (deleteProject.isPending) return;
+    const confirmed = window.confirm(
+      `Delete "${project.name}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    deleteProject.mutate(project.id);
+  };
+
+  const onRename = () => {
+    if (renameProject.isPending) return;
+    const nextName = window.prompt("Rename project", project.name);
+    if (!nextName) return;
+    const trimmed = nextName.trim();
+    if (!trimmed || trimmed === project.name) return;
+    renameProject.mutate({ projectId: project.id, name: trimmed });
   };
 
   return (
@@ -211,6 +259,42 @@ const ProjectCard = memo(({ project }: { project: ProjectType }) => {
         flex items-center justify-center
         "
       >
+        <div className="absolute right-2 top-2 z-10">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="h-8 w-8 rounded-full"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRename();
+                }}
+              >
+                <PencilIcon className="h-4 w-4" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete();
+                }}
+              >
+                <Trash2Icon className="h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         {thumbnail ? (
           <img
             src={thumbnail}
