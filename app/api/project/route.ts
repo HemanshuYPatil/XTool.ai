@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { generateProjectName } from "@/app/action/action";
 import { inngest } from "@/inngest/client";
 import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
+import { isDeveloper } from "@/lib/developers";
 
 export async function GET() {
   try {
@@ -52,8 +53,9 @@ export async function POST(request: Request) {
     const userId = user.id;
     await ensureUserFromKinde(user);
     const dbUser = await getUserWithSubscription(userId);
-    const plan = dbUser?.plan ?? "FREE";
-    if (plan === "FREE") {
+    const isDev = await isDeveloper(userId);
+    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
+    if (!isDev && plan === "FREE") {
       const projectCount = await prisma.project.count({
         where: { userId },
       });
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
           projectId: project.id,
           prompt,
           plan,
+          isDeveloper: isDev,
         },
       });
     } catch (error) {

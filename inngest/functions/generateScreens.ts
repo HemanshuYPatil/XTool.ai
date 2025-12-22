@@ -2,7 +2,11 @@ import { generateObject, generateText, stepCountIs } from "ai";
 import { inngest } from "../client";
 import { z } from "zod";
 import { FrameType } from "@/types/project";
-import { ANALYSIS_PROMPT, GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
+import {
+  ANALYSIS_PROMPT,
+  GENERATION_SYSTEM_PROMPT,
+  PRO_STYLE_PROMPT,
+} from "@/lib/prompt";
 import prisma from "@/lib/prisma";
 import {
   BASE_VARIABLES,
@@ -53,7 +57,7 @@ const AnalysisSchema = z.object({
       })
     )
     .min(1)
-    .max(4),
+    .max(6),
 });
 
 const model = openrouterAi(OPENROUTER_MODEL_ID);
@@ -70,6 +74,7 @@ export const generateScreens = inngest.createFunction(
       frames,
       theme: existingTheme,
       plan,
+      isDeveloper,
     } = event.data;
     const CHANNEL = `user:${userId}`;
     const isExistingGeneration = Array.isArray(frames) && frames.length > 0;
@@ -103,10 +108,11 @@ export const generateScreens = inngest.createFunction(
             .join("\n\n")
         : "";
 
+      const effectivePlan = isDeveloper ? "PRO" : plan;
       const themeRestriction =
-        plan === "PRO"
+        effectivePlan === "PRO"
           ? ""
-          : `\nALLOWED THEME IDS: ${getThemesForPlan(plan)
+          : `\nALLOWED THEME IDS: ${getThemesForPlan(effectivePlan)
               .map((t) => t.id)
               .join(", ")}`;
       const analysisPrompt = isExistingGeneration
@@ -130,7 +136,7 @@ export const generateScreens = inngest.createFunction(
           ${themeRestriction}
         `.trim();
 
-      const availableThemes = getThemesForPlan(plan);
+      const availableThemes = getThemesForPlan(effectivePlan);
       const fallbackTheme =
         availableThemes[0]?.id ?? THEME_LIST[0]?.id ?? "midnight";
 
@@ -154,7 +160,7 @@ export const generateScreens = inngest.createFunction(
           schema: AnalysisSchema,
           system: ANALYSIS_PROMPT,
           prompt: analysisPrompt,
-          maxTokens: 2000,
+          maxOutputTokens: 2000,
         });
         object = result.object;
       } catch {
@@ -163,7 +169,7 @@ export const generateScreens = inngest.createFunction(
             model,
             system: ANALYSIS_PROMPT,
             prompt: `${analysisPrompt}\n\nReturn ONLY valid JSON matching the schema. No prose, no markdown.`,
-            maxTokens: 2000,
+            maxOutputTokens: 2000,
           });
           const raw = result.text ?? "";
           const cleaned = raw.replace(/```(?:json)?/g, "").trim();
@@ -176,10 +182,20 @@ export const generateScreens = inngest.createFunction(
         }
       }
 
-      const maxScreens = plan === "PRO" ? 4 : 1;
-      const screens = object.screens.slice(0, maxScreens);
+      const maxScreens = effectivePlan === "PRO" ? 5 : 2;
+      const minScreens = effectivePlan === "PRO" ? 4 : 2;
+      const screens = isDeveloper
+        ? object.screens
+        : object.screens.length >= minScreens
+        ? object.screens.slice(0, maxScreens)
+        : [
+            ...object.screens,
+            ...object.screens.slice(0, minScreens - object.screens.length),
+          ].slice(0, maxScreens);
       const rawTheme = isExistingGeneration ? existingTheme : object.theme;
-      const themeToUse = isThemeAllowedForPlan(rawTheme, plan)
+      const themeToUse = isDeveloper
+        ? rawTheme
+        : isThemeAllowedForPlan(rawTheme, effectivePlan)
         ? rawTheme
         : fallbackTheme;
 
@@ -232,13 +248,18 @@ export const generateScreens = inngest.createFunction(
         .join("\n\n");
 
       await step.run(`generated-screen-${i}`, async () => {
-        const buildPrompt = (extraInstruction?: string) => `
+        const proStyle =
+          plan === "PRO" ? `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n` : "";
+      const buildPrompt = (extraInstruction?: string) => `
+          USER REQUEST: ${prompt}
+
           - Screen ${i + 1}/${analysis.screens.length}
           - Screen ID: ${screenPlan.id}
           - Screen Name: ${screenPlan.name}
           - Screen Purpose: ${screenPlan.purpose}
 
           VISUAL DESCRIPTION: ${screenPlan.visualDescription}
+          ${proStyle}
 
           EXISTING SCREENS REFERENCE (Extract and reuse their components):
           ${previousFramesContext || "No previous screens"}
@@ -273,6 +294,7 @@ export const generateScreens = inngest.createFunction(
           - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
         10. **Never output markdown links or plain URLs. If you use an image, always render it as an <img> tag.**
         11. **Do not add explanatory text, image source text, or conversational sentences.**
+        12. **Include at least one <img> that uses searchUnsplash output for the main visual.**
         Generate the complete, production-ready HTML for this screen now.
         ${extraInstruction ?? ""}
       `.trim();
@@ -287,7 +309,7 @@ export const generateScreens = inngest.createFunction(
               },
               stopWhen: stepCountIs(5),
               prompt: buildPrompt(extraInstruction),
-              maxTokens: 3000,
+              maxOutputTokens: 3000,
             });
             return result.text ?? "";
           } catch {
@@ -296,7 +318,7 @@ export const generateScreens = inngest.createFunction(
               system: GENERATION_SYSTEM_PROMPT,
               stopWhen: stepCountIs(5),
               prompt: buildPrompt(extraInstruction),
-              maxTokens: 3000,
+              maxOutputTokens: 3000,
             });
             return result.text ?? "";
           }

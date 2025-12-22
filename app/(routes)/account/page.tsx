@@ -2,6 +2,8 @@ import Header from "../_common/header";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
 import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
+import { isDeveloper } from "@/lib/developers";
+import DeveloperTools from "@/components/developer-tools";
 
 const AccountPage = async () => {
   const { getUser, getClaim } = getKindeServerSession();
@@ -14,6 +16,7 @@ const AccountPage = async () => {
     await ensureUserFromKinde(user);
   }
   const subscriptionData = user ? await getUserWithSubscription(user.id) : null;
+  const developer = user ? await isDeveloper(user.id) : false;
   const projectCount = user
     ? await prisma.project.count({ where: { userId: user.id } })
     : 0;
@@ -56,8 +59,11 @@ const AccountPage = async () => {
     if (days === 0) return "Today";
     return `${days} day${days === 1 ? "" : "s"} ago`;
   })();
-  const planLabel =
-    subscriptionData?.plan === "PRO" ? "Xtreme" : "Free";
+  const planLabel = developer
+    ? "Developer"
+    : subscriptionData?.plan === "PRO"
+    ? "Xtreme"
+    : "Free";
   const seatsLabel = subscriptionData?.subscription?.seats
     ? `${subscriptionData.subscription.seats} seat${
         subscriptionData.subscription.seats === 1 ? "" : "s"
@@ -153,7 +159,7 @@ const AccountPage = async () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border bg-card/70 p-6 shadow-sm lg:col-span-3">
+          {/* <div className="rounded-3xl border bg-card/70 p-6 shadow-sm lg:col-span-3">
             <h2 className="text-lg font-semibold">Security and access</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Keep your workspace protected with modern authentication options.
@@ -178,7 +184,9 @@ const AccountPage = async () => {
                 <p className="mt-2 text-sm font-medium">Not available</p>
               </div>
             </div>
-          </div>
+          </div> */}
+
+          {developer ? <DeveloperTools /> : null}
         </div>
       </section>
     </div>

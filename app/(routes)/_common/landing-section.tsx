@@ -1,5 +1,5 @@
 "use client";
-import React, { memo, useState } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import PromptInput from "@/components/prompt-input";
@@ -27,6 +27,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 type LandingSectionProps = {
   initialUser?: {
@@ -35,15 +44,98 @@ type LandingSectionProps = {
     family_name?: string | null;
     picture?: string | null;
   };
+  initialIsDeveloper?: boolean;
 };
 
-const LandingSection = ({ initialUser }: LandingSectionProps) => {
+const LandingSection = ({
+  initialUser,
+  initialIsDeveloper,
+}: LandingSectionProps) => {
   const { user } = useKindeBrowserClient();
   const [promptText, setPromptText] = useState<string>("");
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [renameProject, setRenameProject] = useState<ProjectType | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteProject, setDeleteProject] = useState<ProjectType | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [modelDialogOpen, setModelDialogOpen] = useState(false);
+  const [modelInfo, setModelInfo] = useState<{
+    model?: string;
+    provider?: string;
+  } | null>(null);
+  const heroRef = useRef<HTMLDivElement | null>(null);
+  const projectsRef = useRef<HTMLDivElement | null>(null);
   const userId = user?.id ?? initialUser?.id ?? undefined;
 
   const { data: projects, isLoading, isError } = useGetProjects(userId);
   const { mutate, isPending } = useCreateProject();
+  const deleteProjectMutation = useDeleteProject();
+  const renameProjectMutation = useRenameProject();
+  const developer = Boolean(initialIsDeveloper);
+  useEffect(() => {
+    if (!projects?.length) {
+      setSelectedProjects([]);
+      return;
+    }
+    setSelectedProjects((prev) =>
+      prev.filter((id) =>
+        projects.some((project: ProjectType) => project.id === id)
+      )
+    );
+  }, [projects]);
+
+  useEffect(() => {
+    if (!modelDialogOpen || modelInfo) return;
+    fetch("/api/model")
+      .then((res) => res.json())
+      .then((data) => setModelInfo(data))
+      .catch(() => setModelInfo({ model: "Unavailable", provider: "Unknown" }));
+  }, [modelDialogOpen, modelInfo]);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+    (async () => {
+      const { gsap } = await import("gsap");
+      if (!active) return;
+      ctx = gsap.context(() => {
+        gsap.from("[data-hero]", {
+          opacity: 0,
+          y: 20,
+          duration: 0.6,
+          ease: "power2.out",
+          stagger: 0.08,
+        });
+      }, heroRef);
+    })();
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!projectsRef.current || !projects?.length) return;
+    let ctx: { revert: () => void } | undefined;
+    let active = true;
+    (async () => {
+      const { gsap } = await import("gsap");
+      if (!active) return;
+      ctx = gsap.context(() => {
+        gsap.from(".project-card", {
+          opacity: 0,
+          y: 14,
+          duration: 0.45,
+          ease: "power2.out",
+          stagger: 0.05,
+        });
+      }, projectsRef);
+    })();
+    return () => {
+      active = false;
+      ctx?.revert();
+    };
+  }, [projects?.length]);
 
   const suggestions = [
     {
@@ -87,6 +179,52 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
     mutate(promptText);
   };
 
+  const toggleSelected = (projectId: string) => {
+    setSelectedProjects((prev) =>
+      prev.includes(projectId)
+        ? prev.filter((id) => id !== projectId)
+        : [...prev, projectId]
+    );
+  };
+
+  const selectedProjectItems = useMemo(() => {
+    if (!projects?.length) return [];
+    return projects.filter((project: ProjectType) =>
+      selectedProjects.includes(project.id)
+    );
+  }, [projects, selectedProjects]);
+
+  const onConfirmDelete = async () => {
+    if (!deleteProject) return;
+    await deleteProjectMutation.mutateAsync(deleteProject.id);
+    setDeleteProject(null);
+  };
+
+  const onConfirmBulkDelete = async () => {
+    if (!selectedProjectItems.length) return;
+    await Promise.all(
+      selectedProjectItems.map((project: ProjectType) =>
+        deleteProjectMutation.mutateAsync(project.id)
+      )
+    );
+    setSelectedProjects([]);
+    setBulkDeleteOpen(false);
+  };
+
+  const onConfirmRename = async () => {
+    if (!renameProject) return;
+    const nextName = renameValue.trim();
+    if (!nextName || nextName === renameProject.name) {
+      setRenameProject(null);
+      return;
+    }
+    await renameProjectMutation.mutateAsync({
+      projectId: renameProject.id,
+      name: nextName,
+    });
+    setRenameProject(null);
+  };
+
   return (
     <div className=" w-full min-h-screen">
       <div className="flex flex-col">
@@ -98,8 +236,9 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
          items-center justify-center gap-8
         "
           >
-            <div className="space-y-3">
+            <div className="space-y-3" ref={heroRef}>
               <h1
+                data-hero
                 className="text-center font-semibold text-4xl
             tracking-tight sm:text-5xl
             "
@@ -107,7 +246,7 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
                 Design mobile apps <br className="md:hidden" />
                 <span className="text-primary">in minutes</span>
               </h1>
-              <div className="mx-auto max-w-2xl ">
+              <div className="mx-auto max-w-2xl " data-hero>
                 <p className="text-center font-medium text-foreground leading-relaxed sm:text-lg">
                   Go from idea to beautiful app mockups in minutes by chatting
                   with AI.
@@ -116,6 +255,7 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
             </div>
 
             <div
+              data-hero
               className="flex w-full max-w-3xl flex-col
             item-center gap-8 relative z-50
             "
@@ -129,8 +269,22 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
                   onSubmit={handleSubmit}
                 />
               </div>
+              {developer && (
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => setModelDialogOpen(true)}
+                  >
+                    Model details
+                  </Button>
+                </div>
+              )}
 
-              <div className="flex flex-wrap justify-center gap-2 px-5">
+              <div
+                className="flex flex-wrap justify-center gap-2 px-5"
+                data-hero
+              >
                 <Suggestions>
                   {suggestions.map((s) => (
                     <Suggestion
@@ -172,15 +326,13 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
           </div>
         </div>
 
-      
-
-        <div className="w-full py-10">
+        <div className="w-full py-10" ref={projectsRef}>
           <div className="mx-auto max-w-3xl">
             {userId && (
               <div>
                 <h1
                   className="font-medium text-xl
-              tracking-tight
+              tracking-tight mb-2
               "
                 >
                   Recent Projects
@@ -195,14 +347,52 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
                     <Spinner className="size-10" />
                   </div>
                 ) : (
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2
-                  md:grid-cols-3 gap-3 mt-3
-                    "
-                  >
-                    {projects?.map((project: ProjectType) => (
-                      <ProjectCard key={project.id} project={project} />
-                    ))}
+                  <div className="space-y-4">
+                    {selectedProjectItems.length > 0 && (
+                      <div className="rounded-xl border bg-background p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Selection
+                            </p>
+                            <p className="mt-1 text-sm">
+                              {selectedProjectItems.length} selected
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => setBulkDeleteOpen(true)}
+                            >
+                              Delete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setSelectedProjects([])}
+                            >
+                              Clear
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {projects?.map((project: ProjectType) => (
+                        <ProjectCard
+                          key={project.id}
+                          project={project}
+                          isSelected={selectedProjects.includes(project.id)}
+                          onToggleSelect={() => toggleSelected(project.id)}
+                          onRequestDelete={() => setDeleteProject(project)}
+                          onRequestRename={() => {
+                            setRenameValue(project.name);
+                            setRenameProject(project);
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -212,119 +402,267 @@ const LandingSection = ({ initialUser }: LandingSectionProps) => {
           </div>
         </div>
       </div>
+
+      <Dialog open={modelDialogOpen} onOpenChange={setModelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generation model</DialogTitle>
+            <DialogDescription>
+              The active model used for generating UI screens.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span className="text-muted-foreground">Provider</span>
+              <span className="font-medium">
+                {modelInfo?.provider ?? "OpenRouter"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span className="text-muted-foreground">Model</span>
+              <span className="font-medium">
+                {modelInfo?.model ?? "Loading..."}
+              </span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setModelDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(renameProject)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRenameProject(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit project name</DialogTitle>
+            <DialogDescription>
+              Choose a new name for this project.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(event) => setRenameValue(event.target.value)}
+            placeholder="Project name"
+          />
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setRenameProject(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={onConfirmRename}
+              disabled={renameProjectMutation.isPending}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteProject)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteProject(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete project</DialogTitle>
+            <DialogDescription>
+              This will permanently delete{" "}
+              <span className="font-medium">{deleteProject?.name}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setDeleteProject(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirmDelete}
+              disabled={deleteProjectMutation.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete selected projects</DialogTitle>
+            <DialogDescription>
+              You are about to delete {selectedProjectItems.length} project
+              {selectedProjectItems.length === 1 ? "" : "s"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-48 space-y-2 overflow-y-auto text-sm">
+            {selectedProjectItems.map((project: ProjectType) => (
+              <div
+                key={project.id}
+                className="flex items-center justify-between rounded-lg border px-3 py-2"
+              >
+                <span className="font-medium">{project.name}</span>
+                <span className="text-muted-foreground">
+                  {formatDistanceToNow(new Date(project.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setBulkDeleteOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirmBulkDelete}
+              disabled={
+                deleteProjectMutation.isPending || !selectedProjectItems.length
+              }
+            >
+              Delete selected
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-const ProjectCard = memo(({ project }: { project: ProjectType }) => {
-  const router = useRouter();
-  const deleteProject = useDeleteProject();
-  const renameProject = useRenameProject();
-  const createdAtDate = new Date(project.createdAt);
-  const timeAgo = formatDistanceToNow(createdAtDate, { addSuffix: true });
-  const thumbnail = project.thumbnail || null;
+const ProjectCard = memo(
+  ({
+    project,
+    isSelected,
+    onToggleSelect,
+    onRequestDelete,
+    onRequestRename,
+  }: {
+    project: ProjectType;
+    isSelected: boolean;
+    onToggleSelect: () => void;
+    onRequestDelete: () => void;
+    onRequestRename: () => void;
+  }) => {
+    const router = useRouter();
+    const createdAtDate = new Date(project.createdAt);
+    const timeAgo = formatDistanceToNow(createdAtDate, { addSuffix: true });
+    const thumbnail = project.thumbnail || null;
 
-  const onRoute = () => {
-    router.push(`/project/${project.id}`);
-  };
+    const onRoute = () => {
+      router.push(`/project/${project.id}`);
+    };
 
-  const onDelete = () => {
-    if (deleteProject.isPending) return;
-    const confirmed = window.confirm(
-      `Delete "${project.name}"? This cannot be undone.`
-    );
-    if (!confirmed) return;
-    deleteProject.mutate(project.id);
-  };
-
-  const onRename = () => {
-    if (renameProject.isPending) return;
-    const nextName = window.prompt("Rename project", project.name);
-    if (!nextName) return;
-    const trimmed = nextName.trim();
-    if (!trimmed || trimmed === project.name) return;
-    renameProject.mutate({ projectId: project.id, name: trimmed });
-  };
-
-  return (
-    <div
-      role="button"
-      className="w-full flex flex-col border rounded-xl cursor-pointer
+    return (
+      <div
+        role="button"
+        className="project-card w-full flex flex-col border rounded-xl cursor-pointer
     hover:shadow-md overflow-hidden
     "
-      onClick={onRoute}
-    >
-      <div
-        className="h-40 bg-[#eee] relative overflow-hidden
+        onClick={onRoute}
+      >
+        <div
+          className="h-40 bg-[#eee] relative overflow-hidden
         flex items-center justify-center
         "
-      >
-        <div className="absolute right-2 top-2 z-10">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon"
-                variant="secondary"
-                className="h-8 w-8 rounded-full"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <MoreHorizontalIcon className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onRename();
-                }}
-              >
-                <PencilIcon className="h-4 w-4" />
-                Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDelete();
-                }}
-              >
-                <Trash2Icon className="h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        {thumbnail ? (
-          <img
-            src={thumbnail}
-            className="w-full h-full object-cover object-left
+        >
+          <button
+            type="button"
+            className="absolute left-2 top-2 z-10 rounded-full border bg-background/90 px-2 py-1 text-xs font-medium"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleSelect();
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={`h-3 w-3 rounded-full border ${
+                  isSelected ? "bg-primary border-primary" : "bg-transparent"
+                }`}
+              ></span>
+              {isSelected ? "Selected" : "Select"}
+            </span>
+          </button>
+          <div className="absolute right-2 top-2 z-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="h-8 w-8 rounded-full"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <MoreHorizontalIcon className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRequestRename();
+                  }}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRequestDelete();
+                  }}
+                >
+                  <Trash2Icon className="h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {thumbnail ? (
+            <img
+              src={thumbnail}
+              className="w-full h-full object-cover object-left
            scale-110
           "
-          />
-        ) : (
-          <div
-            className="w-16 h-16 rounded-full bg-primary/20
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-full bg-primary/20
               flex items-center justify-center text-primary
             "
-          >
-            <FolderOpenDotIcon />
-          </div>
-        )}
-      </div>
+            >
+              <FolderOpenDotIcon />
+            </div>
+          )}
+        </div>
 
-      <div className="p-4 flex flex-col">
-        <h3
-          className="font-semibold
+        <div className="p-4 flex flex-col">
+          <h3
+            className="font-semibold
          text-sm truncate w-full mb-1 line-clamp-1"
-        >
-          {project.name}
-        </h3>
-        <p className="text-xs text-muted-foreground">{timeAgo}</p>
+          >
+            {project.name}
+          </h3>
+          <p className="text-xs text-muted-foreground">{timeAgo}</p>
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 ProjectCard.displayName = "ProjectCard";
 

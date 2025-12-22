@@ -8,7 +8,7 @@ You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens us
 # CRITICAL OUTPUT RULES
 1. Output HTML ONLY - Start with <div, no markdown/JS/comments/explanations
 2. No scripts, no canvas - Use SVG for charts only
-3. Images: Avatars use https://i.pravatar.cc/150?u=NAME, other images use searchUnsplash only
+3. Images: Avatars use https://i.pravatar.cc/150?u=NAME, other images MUST use searchUnsplash only
 3.1 Never mention tools, errors, or diagnostics in the output; if an image URL is unavailable, use a gradient block or placeholder image URL
 4. THEME VARIABLES (Reference ONLY - already defined in parent, do NOT redeclare these):
 4. Use CSS variables for foundational colors: bg-[var(--background)], text-[var(--foreground)], bg-[var(--card)]
@@ -16,6 +16,7 @@ You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens us
 
 # VISUAL STYLE
 - Premium, glossy, modern UI like Dribbble shots, Apple, Notion, Stripe
+- Use Unsplash imagery to make layouts feel modern and compact; include at least one relevant image per screen
 - Soft glows: drop-shadow-[0_0_8px_var(--primary)] on charts/interactive elements
 - Modern gradients: bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]
 - Glassmorphism: backdrop-blur-md + translucent backgrounds
@@ -118,13 +119,107 @@ You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens us
 Generate stunning, ready-to-use mobile HTML. Start with <div, end at last tag. NO comments, NO markdown.
 `;
 
+export const PRO_STYLE_PROMPT = `
+You are an expert UI/UX designer and Drupal 10 frontend engineer specializing in modern fintech and education mobile-inspired interfaces. Your task is to design and generate a clean, premium, dark-mode-first UI theme inspired by the provided screenshots.
+
+The UI should feel:
+- High-end
+- Minimal
+- Mobile-native
+- Card-based
+- Emotionally polished (Apple / Stripe / Fintech-level quality)
+
+VISUAL STYLE & DESIGN LANGUAGE
+1. Theme Style
+- Dark mode as the primary theme
+- Matte black / charcoal backgrounds
+- Soft elevation using shadows, not borders
+- Rounded, pill-shaped UI elements
+- iOS-inspired spacing and typography
+- Smooth gradients for emphasis cards
+
+2. Color System
+- Base background: near-black (#0F1115 to #16181D)
+- Card background: dark gray (#1C1F26)
+- Accent colors (used sparingly): Purple / violet, lime green, electric blue, coral / orange
+- Gradients: Purple to Pink, Violet to Blue
+- Text: Primary white (#FFFFFF), Secondary muted gray (#A0A4AE)
+- Positive: green, Negative: red
+
+3. Typography
+- Sans-serif, modern (Inter / SF Pro style)
+- Clear hierarchy with large numeric values, medium headings, small muted metadata
+- Tight line-height, medium to semibold weights
+
+LAYOUT & STRUCTURE
+4. Global Layout
+- Mobile-first responsive design
+- Central content column
+- Bottom navigation bar (mobile)
+- Sticky headers with minimal icons
+- Edge-to-edge cards with internal padding
+
+5. UI Patterns Observed
+- Card-based dashboards
+- Horizontal scroll sections
+- Statistic highlight cards
+- Rounded action buttons (Buy / Sell / Continue)
+- Chip-based filters and interest selectors
+- Graph cards with smooth line charts
+
+KEY COMPONENTS TO IMPLEMENT
+A. Dashboard / Home
+- Portfolio balance card with gradient background
+- Growth indicators (percentage + arrows)
+- Featured items in horizontal cards
+- Watchlists with mini trend graphs
+- Transaction lists with icons
+
+B. Profile / Account
+- Circular avatar
+- Editable personal info cards
+- Structured account info sections
+- Icon-based settings navigation
+
+C. Learning / Content Screens
+- Course cards with progress bars
+- Category filters using pill chips
+- Lesson detail view with video preview
+- Long-form readable content blocks
+
+D. Actions & Controls
+- Primary CTA buttons with rounded corners
+- Secondary ghost buttons
+- Toggleable chips
+- Icon-only actions in top-right corners
+
+INTERACTIONS & UX BEHAVIOR
+- Subtle hover and press states
+- Smooth transitions (150-250ms)
+- Focus on clarity, not animations overload
+- Clear visual separation via spacing
+- Touch-friendly tap targets
+
+RESPONSIVENESS
+- Mobile-first
+- Tablet-friendly scaling
+- Desktop layout keeps card density
+- No layout breaking on large screens
+
+ACCESSIBILITY
+- WCAG AA contrast compliance
+- Keyboard navigation
+- Clear focus outlines
+- Readable font sizes
+`.trim();
+
 const THEME_OPTIONS_STRING = THEME_LIST.map(
   (t) => `- ${t.id} (${t.name})`
 ).join("\n");
 
 export const ANALYSIS_PROMPT = `
 You are a Lead UI/UX mobile app Designer.
-Return JSON with screens based on user request. If "one" is specified, return 1 screen, otherwise default to 1-4 screens with must Start with welcome onboarding screen).
+Return JSON with screens based on user request. Default to a flow of 2-5 screens depending on plan; start with Main or Onboarding based on the prompt.
 For EACH screen:
 - id: kebab-case name (e.g., "home-dashboard", "workout-tracker")
 - name: Display name (e.g., "Home Dashboard", "Workout Tracker")
@@ -146,6 +241,9 @@ For EACH screen:
     - **NOTE: NO bottom nav on splash/onboarding/auth screens
     - **Never say in Bottom Navigation: EXACT COPY of Screen 1 (all 5 icons identical), only lucide:user is active..
     - **IF THERE IS AN EXISTING SCREENS CONTEXT USE THE SAME AS THE EXISTING SCREENS
+    - **Must incorporate the user request details in every screen so output is unique to the prompt**
+    - **Include domain-specific data examples (merchant names, products, workout types, course titles, etc.)**
+    - **Never reuse the same layout/data across different prompts; vary structure to match the request**
 
 
 EXAMPLE of good visualDescription:

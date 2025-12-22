@@ -6,6 +6,8 @@ import {
   getUserWithSubscription,
   syncSubscriptionForUser,
 } from "@/lib/billing";
+import prisma from "@/lib/prisma";
+import { isDeveloper } from "@/lib/developers";
 
 const formatCurrency = (amount?: number | null, currency?: string | null) => {
   if (amount == null || !currency) return "Not available";
@@ -27,8 +29,27 @@ const BillingPage = async () => {
     await syncSubscriptionForUser(user.id);
   }
   const subscriptionData = user ? await getUserWithSubscription(user.id) : null;
+  const developer = user ? await isDeveloper(user.id) : false;
   const subscription = subscriptionData?.subscription;
-  const planLabel = subscriptionData?.plan === "PRO" ? "Xtreme" : "Free";
+  const planLabel = developer
+    ? "Developer"
+    : subscriptionData?.plan === "PRO"
+    ? "Xtreme"
+    : "Free";
+  const dailyLimitLabel =
+    developer || subscriptionData?.plan === "PRO" ? "Unlimited" : "1";
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const [projectCount, projectCountToday] = user
+    ? await Promise.all([
+        prisma.project.count({
+          where: { userId: user.id },
+        }),
+        prisma.project.count({
+          where: { userId: user.id, createdAt: { gte: startOfDay } },
+        }),
+      ])
+    : [0, 0];
   const priceLabel =
     subscriptionData?.plan === "PRO"
       ? formatCurrency(subscription?.amount, subscription?.currency)
@@ -72,6 +93,9 @@ const BillingPage = async () => {
               {planLabel} plan billed monthly.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-4">
+              <div className="rounded-full border border-primary/30 bg-primary/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                Active: {planLabel}
+              </div>
               <div className="rounded-2xl border border-border/60 bg-background px-4 py-3">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                   Price
@@ -94,7 +118,7 @@ const BillingPage = async () => {
               </div>
             </div>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              {subscriptionData?.plan === "PRO" ? (
+              {developer || subscriptionData?.plan === "PRO" ? (
                 <Link
                   href={hasPortal ? "/api/billing/portal" : "/billing"}
                   className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -133,6 +157,33 @@ const BillingPage = async () => {
                   ? "Update cards, invoices, and receipts."
                   : "Upgrade to access portal tools."}
               </p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border bg-card/70 p-6 shadow-sm lg:col-span-3">
+            <h2 className="text-lg font-semibold">Usage and limits</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Track your production usage based on your current plan.
+            </p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl border border-border/60 bg-background p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Projects total
+                </p>
+                <p className="mt-2 text-sm font-medium">{projectCount}</p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Projects today
+                </p>
+                <p className="mt-2 text-sm font-medium">{projectCountToday}</p>
+              </div>
+              <div className="rounded-2xl border border-border/60 bg-background p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Daily limit
+                </p>
+                <p className="mt-2 text-sm font-medium">{dailyLimitLabel}</p>
+              </div>
             </div>
           </div>
 

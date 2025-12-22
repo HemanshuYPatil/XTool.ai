@@ -1,54 +1,74 @@
 "use server";
-import { GEMINI_MODEL_ID } from "@/lib/ai-models";
+import { OPENROUTER_PROJECT_NAME_MODEL_ID } from "@/lib/ai-models";
+
+const toTwoWordTitle = (input: string) => {
+  const cleaned = input
+    .replace(/[`"'’“”]/g, "")
+    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) {
+    return "New Project";
+  }
+  const words = cleaned.split(" ").filter(Boolean);
+  const picked = words.slice(0, 2).map((word) => {
+    const [first, ...rest] = word;
+    return `${first?.toUpperCase() ?? ""}${rest.join("").toLowerCase()}`;
+  });
+  return picked.join(" ");
+};
 
 export async function generateProjectName(prompt: string) {
   try {
-    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      return "Untitled Project";
+    if (!process.env.OPENROUTER_API_KEY) {
+      return toTwoWordTitle(prompt);
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_ID}:generateContent?key=${process.env.GOOGLE_GENERATIVE_AI_API_KEY}`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "http-referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost",
+          "x-title": "XDesign.AI",
+        },
         body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: [
-                  "You are an AI assistant that generates very very short project names based on the user's prompt.",
-                  "- Keep it under 5 words.",
-                  "- Capitalize words appropriately.",
-                  "- Do not include special characters.",
-                ].join("\n"),
-              },
-            ],
-          },
-          contents: [
+          model: OPENROUTER_PROJECT_NAME_MODEL_ID,
+          messages: [
             {
-              role: "user",
-              parts: [{ text: prompt }],
+              role: "system",
+              content: [
+                "You generate a short two-word project name based on the user's prompt.",
+                "- Return exactly two words.",
+                "- Capitalize words appropriately.",
+                "- Do not include special characters.",
+                "- Return only the name, no quotes.",
+              ].join("\n"),
             },
+            { role: "user", content: prompt },
           ],
+          max_tokens: 12,
+          temperature: 0.2,
         }),
       }
     );
 
     if (!response.ok) {
-      return "Untitled Project";
+      return toTwoWordTitle(prompt);
     }
 
     const data = await response.json();
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ??
-      data?.candidates?.[0]?.content?.parts?.find(
-        (part: { text?: string }) => typeof part?.text === "string"
-      )?.text;
+    const text = (
+      data?.choices?.[0]?.message?.content ??
+      data?.choices?.[0]?.delta?.content ??
+      ""
+    ).trim();
 
-    return text?.trim() || "Untitled Project";
+    return text ? toTwoWordTitle(text) : toTwoWordTitle(prompt);
   } catch (error) {
     console.log(error);
-    return "Untitled Project";
+    return toTwoWordTitle(prompt);
   }
 }

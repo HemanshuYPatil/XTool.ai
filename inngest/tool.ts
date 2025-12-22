@@ -5,7 +5,7 @@ export const unsplashTool = tool({
   name: "searchUnsplash",
   description:
     "Search for high-quality images from Unsplash.  Use this when you need to add an <img> tag.",
-  parameters: z.object({
+  inputSchema: z.object({
     query: z
       .string()
       .describe("Image search query (e.g. 'modern loft', 'finance graph')"),
@@ -13,6 +13,7 @@ export const unsplashTool = tool({
       .enum(["landscape", "portrait", "squarish"])
       .default("landscape"),
   }),
+  outputSchema: z.string(),
   execute: async ({ query, orientation }) => {
     try {
       const res = await fetch(

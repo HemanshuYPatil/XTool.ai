@@ -1,6 +1,9 @@
 import { generateText, stepCountIs } from "ai";
 import { inngest } from "../client";
-import { GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
+import {
+  GENERATION_SYSTEM_PROMPT,
+  PRO_STYLE_PROMPT,
+} from "@/lib/prompt";
 import prisma from "@/lib/prisma";
 import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
 import { unsplashTool } from "../tool";
@@ -27,6 +30,7 @@ export const regenerateFrame = inngest.createFunction(
       prompt,
       theme: themeId,
       frame,
+      plan,
     } = event.data;
     const CHANNEL = `user:${userId}`;
 
@@ -49,8 +53,11 @@ export const regenerateFrame = inngest.createFunction(
         ${selectedTheme?.style || ""}
       `;
 
+      const proStyle =
+        plan === "PRO" ? `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n` : "";
       const buildPrompt = (extraInstruction?: string) => `
         USER REQUEST: ${prompt}
+        ${proStyle}
 
         ORIGINAL SCREEN TITLE: ${frame.title}
         ORIGINAL SCREEN HTML: ${frame.htmlContent}
@@ -99,7 +106,7 @@ export const regenerateFrame = inngest.createFunction(
             },
             stopWhen: stepCountIs(5),
             prompt: buildPrompt(extraInstruction),
-            maxTokens: 3000,
+            maxOutputTokens: 3000,
           });
           return result.text ?? "";
         } catch {
@@ -108,7 +115,7 @@ export const regenerateFrame = inngest.createFunction(
             system: GENERATION_SYSTEM_PROMPT,
             stopWhen: stepCountIs(5),
             prompt: buildPrompt(extraInstruction),
-            maxTokens: 3000,
+            maxOutputTokens: 3000,
           });
           return result.text ?? "";
         }

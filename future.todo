@@ -1,0 +1,88 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 1766424589276,
+        "children": [],
+        "todo": {
+          "content": "Collaboration: team workspaces, role-based access, shareable links, comments, and review threads.",
+          "id": 1766424589276,
+          "level": "warning",
+          "done": false,
+          "start": 1766424589276
+        }
+      },
+      {
+        "key": 1766424604084,
+        "children": [],
+        "todo": {
+          "content": "Brand kits and design system controls (custom palettes, fonts, logos, component presets) that drive prompt generation and    enforce consistency.",
+          "id": 1766424604084,
+          "level": "warning",
+          "done": false,
+          "start": 1766424604084
+        }
+      },
+      {
+        "key": 1766424624797,
+        "children": [],
+        "todo": {
+          "content": "Export targets beyond PNG: Figma files, React/Tailwind code, Flutter widgets, and design tokens.",
+          "id": 1766424624797,
+          "level": "warning",
+          "done": false,
+          "start": 1766424624797
+        }
+      },
+      {
+        "key": 1766424663924,
+        "children": [],
+        "todo": {
+          "content": "Direct in-canvas editing tools (text/image replace, component selection, layer panel, alignment guides).",
+          "id": 1766424663924,
+          "level": "warning",
+          "done": false,
+          "start": 1766424663924
+        }
+      },
+      {
+        "key": 1766424680055,
+        "children": [
+          {
+            "key": 1766424569846,
+            "children": [],
+            "todo": {
+              "content": "Version history and diff/rollback for frames and projects (store revisions on every generation/regeneration).",
+              "id": 1766424569846,
+              "level": "warning",
+              "done": false,
+              "start": 1766424569846
+            }
+          }
+        ],
+        "todo": {
+          "content": "Usage analytics and a prompt library (saved prompts, generation history, cost tracking, AI critique + accessibility    checks).",
+          "id": 1766424680055,
+          "level": "warning",
+          "done": false,
+          "start": 1766424680055
+        }
+      }
+    ],
+    "expandKeys": [
+      1766424569846
+    ],
+    "schema": "https://github.com/Saber2pr/vsc-ext-todolist/blob/master/src/api/type.ts#L3",
+    "add_mode": "bottom",
+    "virtual": false,
+    "timelines": [],
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "future",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1766424758153"
+  }
+}

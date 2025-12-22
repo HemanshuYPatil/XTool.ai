@@ -7,6 +7,7 @@ import {
   getUserWithSubscription,
 } from "@/lib/billing";
 import { isThemeAllowedForPlan } from "@/lib/themes";
+import { isDeveloper } from "@/lib/developers";
 
 export async function GET(
   req: NextRequest,
@@ -32,6 +33,7 @@ export async function GET(
       },
     });
     const dbUser = await getUserWithSubscription(user.id);
+    const isDev = await isDeveloper(user.id);
 
     if (!project) {
       return NextResponse.json(
@@ -44,7 +46,8 @@ export async function GET(
 
     return NextResponse.json({
       ...project,
-      plan: dbUser?.plan ?? "FREE",
+      plan: isDev ? "PRO" : dbUser?.plan ?? "FREE",
+      isDeveloper: isDev,
     });
   } catch (error) {
     console.log(error);
@@ -75,7 +78,8 @@ export async function POST(
     const userId = user.id;
     await ensureUserFromKinde(user);
     const dbUser = await getUserWithSubscription(userId);
-    const plan = dbUser?.plan ?? "FREE";
+    const isDev = await isDeveloper(userId);
+    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
     const project = await prisma.project.findFirst({
       where: {
         id,
@@ -86,7 +90,7 @@ export async function POST(
     });
 
     if (!project) throw new Error("Project not found");
-    if (plan === "FREE" && project.frames.length >= 1) {
+    if (!isDev && plan === "FREE" && project.frames.length >= 1) {
       return NextResponse.json(
         { error: "Free plan supports one layout per project." },
         { status: 403 }
@@ -104,6 +108,7 @@ export async function POST(
           frames: project.frames,
           theme: project.theme,
           plan,
+          isDeveloper: isDev,
         },
       });
     } catch (error) {
@@ -141,13 +146,14 @@ export async function PATCH(
 
     const userId = user.id;
     let plan: string | undefined;
+    const isDev = await isDeveloper(userId);
 
     if (themeId) {
       await ensureUserFromKinde(user);
       const dbUser = await getUserWithSubscription(userId);
-      plan = dbUser?.plan ?? "FREE";
+      plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
 
-      if (!isThemeAllowedForPlan(themeId, plan)) {
+      if (!isDev && !isThemeAllowedForPlan(themeId, plan)) {
         return NextResponse.json(
           { error: "Theme not available on the free plan." },
           { status: 403 }

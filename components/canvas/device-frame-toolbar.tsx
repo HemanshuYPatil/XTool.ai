@@ -116,7 +116,7 @@ const DeviceFrameToolbar = ({
         <>
           <Separator orientation="vertical" className="h-5! bg-border" />
           <ButtonGroup className="gap-px! justify-end pr-2! h-full ">
-            <TooltipProvider>
+            {/* <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -131,7 +131,7 @@ const DeviceFrameToolbar = ({
                 </TooltipTrigger>
                 <TooltipContent>View HTML</TooltipContent>
               </Tooltip>
-            </TooltipProvider>
+            </TooltipProvider> */}
 
             <TooltipProvider>
               <Tooltip>
