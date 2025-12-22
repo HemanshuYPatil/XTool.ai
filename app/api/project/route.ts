@@ -17,7 +17,7 @@ export async function GET() {
     const projects = await prisma.project.findMany({
       where: {
         userId: user.id,
-        deletedAt: null,
+        OR: [{ deletedAt: null }, { deletedAt: { isSet: false } }],
       },
       take: 10,
       orderBy: { createdAt: "desc" },
@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       data: {
         userId,
         name: projectName,
+        deletedAt: null,
       },
     });
 

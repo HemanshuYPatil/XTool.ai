@@ -25,7 +25,7 @@ export async function GET(
       where: {
         userId: user.id,
         id: id,
-        deletedAt: null,
+        OR: [{ deletedAt: null }, { deletedAt: { isSet: false } }],
       },
       include: {
         frames: true,
@@ -77,7 +77,11 @@ export async function POST(
     const dbUser = await getUserWithSubscription(userId);
     const plan = dbUser?.plan ?? "FREE";
     const project = await prisma.project.findFirst({
-      where: { id, userId: user.id, deletedAt: null },
+      where: {
+        id,
+        userId: user.id,
+        OR: [{ deletedAt: null }, { deletedAt: { isSet: false } }],
+      },
       include: { frames: true },
     });
 
@@ -188,7 +192,11 @@ export async function DELETE(
     }
 
     const project = await prisma.project.findFirst({
-      where: { id, userId: user.id, deletedAt: null },
+      where: {
+        id,
+        userId: user.id,
+        OR: [{ deletedAt: null }, { deletedAt: { isSet: false } }],
+      },
     });
 
     if (!project) {
