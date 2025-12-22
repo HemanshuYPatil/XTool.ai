@@ -1,11 +1,11 @@
-import { tool } from "@openrouter/sdk";
+import { tool } from "ai";
 import { z } from "zod";
 
 export const unsplashTool = tool({
   name: "searchUnsplash",
   description:
     "Search for high-quality images from Unsplash.  Use this when you need to add an <img> tag.",
-  inputSchema: z.object({
+  parameters: z.object({
     query: z
       .string()
       .describe("Image search query (e.g. 'modern loft', 'finance graph')"),
@@ -19,7 +19,7 @@ export const unsplashTool = tool({
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
           query
         )}&orientation=${orientation}&per_page=1&client_id=${
-          process.env.UNSPLASH_ACCESS_KEY
+          process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY
         }`
       );
       const { results } = await res.json();

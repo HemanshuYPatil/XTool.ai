@@ -1,7 +1,6 @@
-import { fromChatMessages, stepCountIs } from "@openrouter/sdk";
+import { generateObject, generateText, stepCountIs } from "ai";
 import { inngest } from "../client";
 import { z } from "zod";
-import { callOpenRouterText } from "@/lib/openrouter-fallback";
 import { FrameType } from "@/types/project";
 import { ANALYSIS_PROMPT, GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
 import prisma from "@/lib/prisma";
@@ -12,7 +11,15 @@ import {
   isThemeAllowedForPlan,
 } from "@/lib/themes";
 import { unsplashTool } from "../tool";
-import { sanitizeGeneratedHtml } from "@/lib/html-sanitize";
+import {
+  buildFallbackHtml,
+  extractHtmlRoot,
+  isLikelyHtml,
+  isLikelyUiHtml,
+  sanitizeGeneratedHtml,
+} from "@/lib/html-sanitize";
+import { openrouterAi } from "@/lib/openrouter-ai";
+import { OPENROUTER_MODEL_ID } from "@/lib/ai-models";
 
 const AnalysisSchema = z.object({
   theme: z
@@ -49,49 +56,7 @@ const AnalysisSchema = z.object({
     .max(4),
 });
 
-const AnalysisSchemaWithOptionalTheme = z.object({
-  theme: z.string().optional(),
-  screens: AnalysisSchema.shape.screens,
-});
-
-const extractJsonObject = (text: string) => {
-  const cleaned = text.replace(/```(?:json)?/g, "").trim();
-  const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) {
-    throw new Error("Failed to extract JSON object from model response.");
-  }
-  return JSON.parse(match[0]);
-};
-
-const normalizeAnalysis = (raw: unknown, fallbackTheme: string) => {
-  const parsed = AnalysisSchemaWithOptionalTheme.parse(raw);
-  const theme = parsed.theme ?? fallbackTheme;
-  return AnalysisSchema.parse({ ...parsed, theme });
-};
-
-const getAnalysisObject = async (
-  analysisPrompt: string,
-  fallbackTheme: string
-) => {
-  const run = async (extraInstruction: string) => {
-    const analysisText = await callOpenRouterText({
-      input: fromChatMessages([
-        { role: "system", content: ANALYSIS_PROMPT },
-        {
-          role: "user",
-          content: `${analysisPrompt}\n\nReturn ONLY valid JSON matching the schema.${extraInstruction}`,
-        },
-      ]),
-    });
-    return normalizeAnalysis(extractJsonObject(analysisText), fallbackTheme);
-  };
-
-  try {
-    return await run("");
-  } catch (error) {
-    return await run(" No prose, no markdown, no code fences.");
-  }
-};
+const model = openrouterAi(OPENROUTER_MODEL_ID);
 
 export const generateScreens = inngest.createFunction(
   { id: "generate-ui-screens" },
@@ -168,8 +133,48 @@ export const generateScreens = inngest.createFunction(
       const availableThemes = getThemesForPlan(plan);
       const fallbackTheme =
         availableThemes[0]?.id ?? THEME_LIST[0]?.id ?? "midnight";
-      const defaultTheme = existingTheme ?? fallbackTheme;
-      const object = await getAnalysisObject(analysisPrompt, defaultTheme);
+
+      const buildFallbackAnalysis = () => ({
+        theme: fallbackTheme,
+        screens: [
+          {
+            id: "main-screen",
+            name: "Main Screen",
+            purpose: "Primary screen for the requested experience.",
+            visualDescription:
+              "Modern mobile UI with clear hierarchy, cards, and action buttons. Use the user request for content direction.",
+          },
+        ],
+      });
+
+      let object: z.infer<typeof AnalysisSchema>;
+      try {
+        const result = await generateObject({
+          model,
+          schema: AnalysisSchema,
+          system: ANALYSIS_PROMPT,
+          prompt: analysisPrompt,
+          maxTokens: 2000,
+        });
+        object = result.object;
+      } catch {
+        try {
+          const result = await generateText({
+            model,
+            system: ANALYSIS_PROMPT,
+            prompt: `${analysisPrompt}\n\nReturn ONLY valid JSON matching the schema. No prose, no markdown.`,
+            maxTokens: 2000,
+          });
+          const raw = result.text ?? "";
+          const cleaned = raw.replace(/```(?:json)?/g, "").trim();
+          const match = cleaned.match(/\{[\s\S]*\}/);
+          object = match
+            ? AnalysisSchema.parse(JSON.parse(match[0]))
+            : buildFallbackAnalysis();
+        } catch {
+          object = buildFallbackAnalysis();
+        }
+      }
 
       const maxScreens = plan === "PRO" ? 4 : 1;
       const screens = object.screens.slice(0, maxScreens);
@@ -227,12 +232,7 @@ export const generateScreens = inngest.createFunction(
         .join("\n\n");
 
       await step.run(`generated-screen-${i}`, async () => {
-        const finalHtml = await callOpenRouterText({
-          input: fromChatMessages([
-            { role: "system", content: GENERATION_SYSTEM_PROMPT },
-            {
-              role: "user",
-              content: `
+        const buildPrompt = (extraInstruction?: string) => `
           - Screen ${i + 1}/${analysis.screens.length}
           - Screen ID: ${screenPlan.id}
           - Screen Name: ${screenPlan.name}
@@ -271,17 +271,55 @@ export const generateScreens = inngest.createFunction(
         8. **Hardcode a style only if a theme variable is not needed for that element.**
         9. **Ensure iframe-friendly rendering:**
           - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
-        Generate the complete, production-ready HTML for this screen now
-      `.trim(),
-            },
-          ]),
-          tools: [unsplashTool],
-          stopWhen: stepCountIs(5),
-        });
-        const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-        const cleanedHtml = sanitizeGeneratedHtml(
-          (match ? match[0] : finalHtml).replace(/```/g, "")
+        10. **Never output markdown links or plain URLs. If you use an image, always render it as an <img> tag.**
+        11. **Do not add explanatory text, image source text, or conversational sentences.**
+        Generate the complete, production-ready HTML for this screen now.
+        ${extraInstruction ?? ""}
+      `.trim();
+
+        const runGeneration = async (extraInstruction?: string) => {
+          try {
+            const result = await generateText({
+              model,
+              system: GENERATION_SYSTEM_PROMPT,
+              tools: {
+                searchUnsplash: unsplashTool,
+              },
+              stopWhen: stepCountIs(5),
+              prompt: buildPrompt(extraInstruction),
+              maxTokens: 3000,
+            });
+            return result.text ?? "";
+          } catch {
+            const result = await generateText({
+              model,
+              system: GENERATION_SYSTEM_PROMPT,
+              stopWhen: stepCountIs(5),
+              prompt: buildPrompt(extraInstruction),
+              maxTokens: 3000,
+            });
+            return result.text ?? "";
+          }
+        };
+
+        let finalHtml = await runGeneration();
+
+        if (!isLikelyHtml(finalHtml) || !isLikelyUiHtml(finalHtml)) {
+          finalHtml = await runGeneration(
+            "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
+          );
+        }
+
+        const extracted = extractHtmlRoot(finalHtml) ?? finalHtml;
+        const sanitized = sanitizeGeneratedHtml(
+          extracted.replace(/```/g, "")
         );
+        const cleanedHtml = isLikelyUiHtml(sanitized)
+          ? sanitized
+          : buildFallbackHtml({
+              title: screenPlan.name,
+              subtitle: screenPlan.purpose,
+            });
 
         //Create the frame
         const frame = await prisma.frame.create({

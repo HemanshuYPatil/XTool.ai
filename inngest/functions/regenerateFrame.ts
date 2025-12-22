@@ -1,11 +1,20 @@
-import { fromChatMessages, stepCountIs } from "@openrouter/sdk";
+import { generateText, stepCountIs } from "ai";
 import { inngest } from "../client";
-import { callOpenRouterText } from "@/lib/openrouter-fallback";
 import { GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
 import prisma from "@/lib/prisma";
 import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
 import { unsplashTool } from "../tool";
-import { sanitizeGeneratedHtml } from "@/lib/html-sanitize";
+import {
+  buildFallbackHtml,
+  extractHtmlRoot,
+  isLikelyHtml,
+  isLikelyUiHtml,
+  sanitizeGeneratedHtml,
+} from "@/lib/html-sanitize";
+import { openrouterAi } from "@/lib/openrouter-ai";
+import { OPENROUTER_MODEL_ID } from "@/lib/ai-models";
+
+const model = openrouterAi(OPENROUTER_MODEL_ID);
 
 export const regenerateFrame = inngest.createFunction(
   { id: "regenerate-frame" },
@@ -40,12 +49,7 @@ export const regenerateFrame = inngest.createFunction(
         ${selectedTheme?.style || ""}
       `;
 
-      const finalHtml = await callOpenRouterText({
-        input: fromChatMessages([
-          { role: "system", content: GENERATION_SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: `
+      const buildPrompt = (extraInstruction?: string) => `
         USER REQUEST: ${prompt}
 
         ORIGINAL SCREEN TITLE: ${frame.title}
@@ -79,18 +83,53 @@ export const regenerateFrame = inngest.createFunction(
           - Do not include markdown, comments, <html>, <body>, or <head>.
         9. **Ensure iframe-friendly rendering:**
             - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
-        Generate the complete, production-ready HTML for this screen now
-        `.trim(),
-          },
-        ]),
-        tools: [unsplashTool],
-        stopWhen: stepCountIs(5),
-      });
+        10. **Never output markdown links or plain URLs. If you use an image, always render it as an <img> tag.**
+        11. **Do not add explanatory text, image source text, or conversational sentences.**
+        Generate the complete, production-ready HTML for this screen now.
+        ${extraInstruction ?? ""}
+        `.trim();
 
-      const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-      const cleanedHtml = sanitizeGeneratedHtml(
-        (match ? match[0] : finalHtml).replace(/```/g, "")
-      );
+      const runGeneration = async (extraInstruction?: string) => {
+        try {
+          const result = await generateText({
+            model,
+            system: GENERATION_SYSTEM_PROMPT,
+            tools: {
+              searchUnsplash: unsplashTool,
+            },
+            stopWhen: stepCountIs(5),
+            prompt: buildPrompt(extraInstruction),
+            maxTokens: 3000,
+          });
+          return result.text ?? "";
+        } catch {
+          const result = await generateText({
+            model,
+            system: GENERATION_SYSTEM_PROMPT,
+            stopWhen: stepCountIs(5),
+            prompt: buildPrompt(extraInstruction),
+            maxTokens: 3000,
+          });
+          return result.text ?? "";
+        }
+      };
+
+      let finalHtml = await runGeneration();
+
+      if (!isLikelyHtml(finalHtml) || !isLikelyUiHtml(finalHtml)) {
+        finalHtml = await runGeneration(
+          "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
+        );
+      }
+
+      const extracted = extractHtmlRoot(finalHtml) ?? finalHtml;
+      const sanitized = sanitizeGeneratedHtml(extracted.replace(/```/g, ""));
+      const cleanedHtml = isLikelyUiHtml(sanitized)
+        ? sanitized
+        : buildFallbackHtml({
+            title: frame.title,
+            subtitle: "Regenerated preview",
+          });
 
       // Update the frame
       const updatedFrame = await prisma.frame.update({
