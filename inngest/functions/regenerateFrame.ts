@@ -5,6 +5,7 @@ import { GENERATION_SYSTEM_PROMPT } from "@/lib/prompt";
 import prisma from "@/lib/prisma";
 import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
 import { unsplashTool } from "../tool";
+import { sanitizeGeneratedHtml } from "@/lib/html-sanitize";
 
 export const regenerateFrame = inngest.createFunction(
   { id: "regenerate-frame" },
@@ -87,7 +88,9 @@ export const regenerateFrame = inngest.createFunction(
       });
 
       const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-      const cleanedHtml = (match ? match[0] : finalHtml).replace(/```/g, "");
+      const cleanedHtml = sanitizeGeneratedHtml(
+        (match ? match[0] : finalHtml).replace(/```/g, "")
+      );
 
       // Update the frame
       const updatedFrame = await prisma.frame.update({

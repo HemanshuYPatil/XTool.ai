@@ -12,6 +12,7 @@ import {
   isThemeAllowedForPlan,
 } from "@/lib/themes";
 import { unsplashTool } from "../tool";
+import { sanitizeGeneratedHtml } from "@/lib/html-sanitize";
 
 const AnalysisSchema = z.object({
   theme: z
@@ -278,9 +279,8 @@ export const generateScreens = inngest.createFunction(
           stopWhen: stepCountIs(5),
         });
         const match = finalHtml.match(/<div[\s\S]*<\/div>/);
-        const cleanedHtml = (match ? match[0] : finalHtml).replace(
-          /```/g,
-          ""
+        const cleanedHtml = sanitizeGeneratedHtml(
+          (match ? match[0] : finalHtml).replace(/```/g, "")
         );
 
         //Create the frame
