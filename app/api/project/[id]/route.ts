@@ -17,7 +17,9 @@ export async function GET(
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const project = await prisma.project.findFirst({
       where: {
@@ -65,7 +67,9 @@ export async function POST(
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!prompt) throw new Error("Missing Prompt");
 
     const userId = user.id;
@@ -126,7 +130,9 @@ export async function PATCH(
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!themeId && !name) throw new Error("Missing update payload");
 
     const userId = user.id;
@@ -177,7 +183,9 @@ export async function DELETE(
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const project = await prisma.project.findFirst({
       where: { id, userId: user.id, deletedAt: null },

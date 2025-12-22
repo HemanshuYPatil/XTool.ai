@@ -10,7 +10,9 @@ export async function GET() {
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const projects = await prisma.project.findMany({
       where: {
@@ -42,7 +44,9 @@ export async function POST(request: Request) {
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
-    if (!user) throw new Error("Unauthorized");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!prompt) throw new Error("Missing Prompt");
 
     const userId = user.id;
