@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type LandingSectionProps = {
   initialUser?: {
@@ -45,11 +46,15 @@ type LandingSectionProps = {
     picture?: string | null;
   };
   initialIsDeveloper?: boolean;
+  showHeader?: boolean;
+  mode?: "page" | "module";
 };
 
 const LandingSection = ({
   initialUser,
   initialIsDeveloper,
+  showHeader = true,
+  mode = "page",
 }: LandingSectionProps) => {
   const { user } = useKindeBrowserClient();
   const [promptText, setPromptText] = useState<string>("");
@@ -225,12 +230,25 @@ const LandingSection = ({
     setRenameProject(null);
   };
 
-  return (
-    <div className=" w-full min-h-screen">
-      <div className="flex flex-col">
-        <Header initialUser={initialUser} />
+  const isModule = mode === "module";
 
-        <div className="relative overflow-hidden pt-28">
+  return (
+    <div
+      className={cn(
+        "w-full",
+        !isModule && "min-h-screen",
+        isModule && "rounded-3xl border bg-card/70 shadow-sm"
+      )}
+    >
+      <div className="flex flex-col">
+        {showHeader ? <Header initialUser={initialUser} /> : null}
+
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            isModule ? "pt-12 pb-6" : "pt-28"
+          )}
+        >
           <div
             className="max-w-6xl mx-auto flex flex-col
          items-center justify-center gap-8
@@ -243,7 +261,7 @@ const LandingSection = ({
             tracking-tight sm:text-5xl
             "
               >
-                Design mobile apps <br className="md:hidden" />
+                Design mobile apps UI <br className="md:hidden" />
                 <span className="text-primary">in minutes</span>
               </h1>
               <div className="mx-auto max-w-2xl " data-hero>
@@ -301,32 +319,41 @@ const LandingSection = ({
               </div>
             </div>
 
-            <div
-              className="absolute -translate-x-1/2
-             left-1/2 w-[5000px] h-[3000px] top-[80%]
-             -z-10"
-            >
+            {!isModule && (
               <div
-                className="-translate-x-1/2 absolute
-               bottom-[calc(100%-300px)] left-1/2
-               h-[2000px] w-[2000px]
-               opacity-20 bg-radial-primary"
-              ></div>
-              <div
-                className="absolute -mt-2.5
-              size-full rounded-[50%]
-               bg-primary/20 opacity-70
-               [box-shadow:0_-15px_24.8px_var(--primary)]"
-              ></div>
-              <div
-                className="absolute z-0 size-full
-               rounded-[50%] bg-background"
-              ></div>
-            </div>
+                className="absolute -translate-x-1/2
+               left-1/2 w-[5000px] h-[3000px] top-[80%]
+               -z-10"
+              >
+                <div
+                  className="-translate-x-1/2 absolute
+                 bottom-[calc(100%-300px)] left-1/2
+                 h-[2000px] w-[2000px]
+                 opacity-20 bg-radial-primary"
+                ></div>
+                <div
+                  className="absolute -mt-2.5
+                size-full rounded-[50%]
+                 bg-primary/20 opacity-70
+                 [box-shadow:0_-15px_24.8px_var(--primary)]"
+                ></div>
+                <div
+                  className="absolute z-0 size-full
+                 rounded-[50%] bg-background"
+                ></div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="w-full py-10" ref={projectsRef}>
+        <div
+          className={cn(
+            "w-full",
+            isModule ? "px-6 pb-10" : "py-10",
+            isModule && "border-t border-border/60"
+          )}
+          ref={projectsRef}
+        >
           <div className="mx-auto max-w-3xl">
             {userId && (
               <div>

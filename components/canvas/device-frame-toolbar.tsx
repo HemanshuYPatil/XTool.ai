@@ -24,6 +24,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -36,9 +39,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { toast } from "sonner";
 
 type PropsType = {
   title: string;
+  frameId: string;
+  projectId: string;
   isSelected?: boolean;
   disabled?: boolean;
   isDownloading: boolean;
@@ -53,6 +59,8 @@ type PropsType = {
 };
 const DeviceFrameToolbar = ({
   title,
+  frameId,
+  projectId,
   isSelected,
   disabled,
   scale = 1.7,
@@ -67,12 +75,40 @@ const DeviceFrameToolbar = ({
 }: PropsType) => {
   const [promptValue, setPromptValue] = useState("");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const handleRegenerate = () => {
     if (promptValue.trim()) {
       onRegenerate?.(promptValue);
       setPromptValue("");
       setIsPopoverOpen(false);
+    }
+  };
+
+  const handleShareFrame = async (permission: "READ_ONLY" | "EDIT") => {
+    if (!projectId || !frameId) return;
+    setIsSharing(true);
+    try {
+      const response = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          frameId,
+          permission,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create share link");
+      }
+      const data = await response.json();
+      await navigator.clipboard.writeText(data.url);
+      toast.success("Frame share link copied.");
+    } catch (error) {
+      console.log(error);
+      toast.error("Unable to create frame link.");
+    } finally {
+      setIsSharing(false);
     }
   };
   return (
@@ -228,6 +264,28 @@ const DeviceFrameToolbar = ({
                 </Tooltip>
               </TooltipProvider>
               <DropdownMenuContent align="end" className="w-32 rounded-md p-0!">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger disabled={disabled || isSharing}>
+                    <span className="flex items-center gap-2">
+                      {isSharing ? <Spinner className="size-3.5" /> : null}
+                      Share frame
+                    </span>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-44">
+                    <DropdownMenuItem
+                      disabled={disabled || isSharing}
+                      onClick={() => handleShareFrame("READ_ONLY")}
+                    >
+                      Read-only link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      disabled={disabled || isSharing}
+                      onClick={() => handleShareFrame("EDIT")}
+                    >
+                      Editable link
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuItem
                   disabled={disabled || isDeleting}
                   onClick={onDeleteFrame}

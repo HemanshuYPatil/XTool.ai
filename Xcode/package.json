@@ -1,0 +1,22 @@
+{
+  "name": "@xtool.ai/xcode",
+  "version": "0.1.3",
+  "description": "Agentic CLI scaffold for terminal-based tools.",
+  "bin": {
+    "xcode": "bin/xcode.js"
+  },
+  "main": "bin/xcode.js",
+  "preferGlobal": true,
+  "dependencies": {
+    "ink": "^3.2.0",
+    "ink-picture": "^1.3.3",
+    "ink-text-input": "^5.0.1",
+    "react": "^18.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

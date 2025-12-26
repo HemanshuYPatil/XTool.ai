@@ -5,6 +5,7 @@ export type ProjectType = {
   thumbnail?: string;
   frames: FrameType[];
   plan?: "FREE" | "PRO";
+  visibility?: "PRIVATE" | "PUBLIC";
   createdAt: Date;
   updatedAt?: Date;
 };

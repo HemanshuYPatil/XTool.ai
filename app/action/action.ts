@@ -32,7 +32,7 @@ export async function generateProjectName(prompt: string) {
           "content-type": "application/json",
           authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "http-referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost",
-          "x-title": "XDesign.AI",
+          "x-title": "XTool.ai",
         },
         body: JSON.stringify({
           model: OPENROUTER_PROJECT_NAME_MODEL_ID,

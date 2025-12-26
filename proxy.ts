@@ -1,13 +1,25 @@
 import { withAuth } from "@kinde-oss/kinde-auth-nextjs/middleware";
 
-export default withAuth(async function middleware() {}, {
-  // Middleware still runs on all routes, but doesn't protect the blog route
-  isReturnToCurrentPage: true,
-  publicPaths: ["/", "/api/inngest"],
-});
+export default withAuth(
+  async function middleware(req: any) {
+    // console.log("look at me", req.kindeAuth);
+  },
+  {
+    isReturnToCurrentPage: true,
+    loginPage: "/api/auth/login",
+    isAuthorized: ({ token }: { token: any }) => {
+      // The user will be considered authorized if they have a valid token
+      return token != null;
+    },
+  }
+);
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/dashboard/:path*",
+    "/account/:path*",
+    "/project/:path*",
+    "/billing/:path*",
+    "/settings/:path*",
   ],
 };

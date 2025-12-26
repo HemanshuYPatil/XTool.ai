@@ -48,7 +48,12 @@ const Page = () => {
    flex flex-col
   "
     >
-      <Header projectName={project?.name} />
+      <Header
+        projectName={project?.name}
+        projectId={project?.id}
+        visibility={project?.visibility}
+        themeId={project?.theme}
+      />
 
       <CanvasProvider
         initialFrames={project?.frames ?? []}

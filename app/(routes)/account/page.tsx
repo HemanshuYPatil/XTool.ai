@@ -85,7 +85,7 @@ const AccountPage = async () => {
             </h1>
             <p className="text-foreground/80 max-w-2xl">
               Keep your details, preferences, and team visibility aligned with
-              how you build in XDesign.
+              how you build in XTool.ai.
             </p>
           </div>
         </div>

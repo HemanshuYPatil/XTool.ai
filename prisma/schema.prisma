@@ -20,6 +20,22 @@ enum Plan {
   PRO
 }
 
+enum ProjectVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum SharePermission {
+  READ_ONLY
+  EDIT
+}
+
+enum ContributionStatus {
+  OPEN
+  MERGED
+  CLOSED
+}
+
 model User {
   id              String        @id @default(auto()) @map("_id") @db.ObjectId
   kindeId         String        @unique
@@ -29,6 +45,9 @@ model User {
   polarCustomerId String?
   subscription    Subscription?
   projects        Project[]
+  shareLinks      ShareLink[]
+  contributions   Contribution[]
+  cliTokens     CliToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -68,7 +87,10 @@ model Project {
     name    String
     theme String?
     thumbnail String?
+    visibility ProjectVisibility @default(PRIVATE)
     frames Frame[]
+    shareLinks ShareLink[]
+    contributions Contribution[]
     deletedAt DateTime?
 
     createdAt DateTime @default(now())
@@ -81,6 +103,61 @@ model Frame {
     htmlContent String
     projectId String @db.ObjectId
     project Project @relation(fields: [projectId], references: [id])
+    shareLinks ShareLink[]
+    contributionFrames ContributionFrame[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+model ShareLink {
+  id         String          @id @default(auto()) @map("_id") @db.ObjectId
+  token      String          @unique
+  projectId  String          @db.ObjectId
+  project    Project         @relation(fields: [projectId], references: [id])
+  frameId    String?         @db.ObjectId
+  frame      Frame?          @relation(fields: [frameId], references: [id])
+  permission SharePermission @default(READ_ONLY)
+  createdBy  String?
+  creator    User?           @relation(fields: [createdBy], references: [kindeId])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contribution {
+  id        String             @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String             @db.ObjectId
+  project   Project            @relation(fields: [projectId], references: [id])
+  authorId  String?
+  author    User?              @relation(fields: [authorId], references: [kindeId])
+  status    ContributionStatus @default(OPEN)
+  title     String
+  summary   String?
+  frames    ContributionFrame[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ContributionFrame {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  contributionId  String        @db.ObjectId
+  contribution    Contribution  @relation(fields: [contributionId], references: [id])
+  frameId         String?       @db.ObjectId
+  frame           Frame?        @relation(fields: [frameId], references: [id])
+  title           String
+  htmlContent     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CliToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [kindeId])
+  expiresAt DateTime
+  lastUsedAt DateTime?
+  createdAt DateTime @default(now())
 }

@@ -135,14 +135,26 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { themeId, name } = await request.json();
+    const { themeId, name, visibility } = await request.json();
     const session = await getKindeServerSession();
     const user = await session.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!themeId && !name) throw new Error("Missing update payload");
+    if (!themeId && !name && !visibility) {
+      throw new Error("Missing update payload");
+    }
+    if (
+      visibility &&
+      visibility !== "PRIVATE" &&
+      visibility !== "PUBLIC"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid visibility option." },
+        { status: 400 }
+      );
+    }
 
     const userId = user.id;
     let plan: string | undefined;
@@ -166,6 +178,7 @@ export async function PATCH(
       data: {
         ...(themeId ? { theme: themeId } : {}),
         ...(name ? { name } : {}),
+        ...(visibility ? { visibility } : {}),
       },
     });
 

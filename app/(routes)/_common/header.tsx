@@ -47,13 +47,13 @@ const Header = ({ initialUser }: HeaderProps) => {
           >
             <Link
               href="/"
-              className="text-foreground-muted text-sm transition-colors hover:text-primary"
+              className="rounded-full px-3 py-1.5 text-foreground-muted text-sm transition-colors hover:bg-muted/70 hover:text-foreground"
             >
               Home
             </Link>
             <Link
               href="/pricing"
-              className="text-foreground-muted text-sm transition-colors hover:text-primary"
+              className="rounded-full px-3 py-1.5 text-foreground-muted text-sm transition-colors hover:bg-muted/70 hover:text-foreground"
             >
               Pricing
             </Link>

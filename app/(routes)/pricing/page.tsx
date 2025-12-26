@@ -1,5 +1,8 @@
 import Link from "next/link";
 import Header from "../_common/header";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
+import { isDeveloper } from "@/lib/developers";
 
 const plans = [
   {
@@ -76,7 +79,19 @@ const outputPreviews = [
   },
 ];
 
-const PricingPage = () => {
+const PricingPage = async () => {
+  const session = await getKindeServerSession();
+  const user = await session.getUser();
+  if (user) {
+    await ensureUserFromKinde(user);
+  }
+  const subscriptionData = user ? await getUserWithSubscription(user.id) : null;
+  const developer = user ? await isDeveloper(user.id) : false;
+  const planLabel = developer
+    ? "Developer"
+    : subscriptionData?.plan === "PRO"
+    ? "Xtreme"
+    : "Free";
   return (
     <div className="min-h-screen w-full bg-background">
       <Header />
@@ -95,6 +110,11 @@ const PricingPage = () => {
               Compare features, see real output differences, and pick the plan
               that helps you ship faster.
             </p>
+            {user ? (
+              <div className="mt-6 inline-flex items-center justify-center gap-3 rounded-full border border-border/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground shadow-sm">
+                Current plan: <span className="text-foreground">{planLabel}</span>
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -125,6 +145,13 @@ const PricingPage = () => {
                       {plan.badge}
                     </span>
                   </div>
+                  {user && !developer ? (
+                    <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      {plan.name === planLabel
+                        ? "Your current plan"
+                        : "Available plan"}
+                    </p>
+                  ) : null}
                   <div className="mt-6 flex items-end gap-2">
                     <span className="text-4xl font-semibold">{plan.price}</span>
                     <span className="text-sm text-muted-foreground">

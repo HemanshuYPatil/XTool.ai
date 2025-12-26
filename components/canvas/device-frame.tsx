@@ -182,6 +182,8 @@ const DeviceFrame = ({
       <div className="w-full h-full">
         <DeviceFrameToolbar
           title={title}
+          frameId={frameId}
+          projectId={projectId}
           isSelected={isSelected && toolMode !== TOOL_MODE_ENUM.HAND}
           disabled={
             isDownloading ||
