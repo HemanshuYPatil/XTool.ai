@@ -37,7 +37,7 @@ const Canvas = ({
     setSelectedElement,
     themeDirty,
   } = useCanvas();
-  const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.SELECT);
+  const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.EDIT);
   const [zoomPercent, setZoomPercent] = useState<number>(53);
   const [currentScale, setCurrentScale] = useState<number>(0.53);
   const [openHtmlDialog, setOpenHtmlDialog] = useState(false);
@@ -166,7 +166,7 @@ const Canvas = ({
       toast.success("Screenshot downloaded");
     } catch (error) {
       console.log(error);
-      toast.error("Failed to screenshot canvs");
+      toast.error("Failed to screenshot canvas");
     } finally {
       setIsScreenshotting(false);
     }
