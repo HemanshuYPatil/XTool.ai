@@ -40,7 +40,7 @@ const DeviceFrame = ({
   projectId,
   onOpenHtmlDialog,
 }: PropsType) => {
-  const { selectedFrameId, setSelectedFrameId, updateFrame, plan } =
+  const { selectedFrameId, setSelectedFrameId, updateFrame, plan, setSelectedElement } =
     useCanvas();
   const [frameSize, setFrameSize] = useState({
     width,
@@ -56,6 +56,18 @@ const DeviceFrame = ({
   const fullHtml = getHTMLWrapper(html, title, theme_style, frameId);
 
   useEffect(() => {
+    if (!iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage(
+      {
+        type: "SET_TOOL_MODE",
+        frameId,
+        toolMode,
+      },
+      "*"
+    );
+  }, [frameId, toolMode]);
+
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (
         event.data.type === "FRAME_HEIGHT" &&
@@ -66,10 +78,28 @@ const DeviceFrame = ({
           height: event.data.height,
         }));
       }
+      if (
+        event.data.type === "ELEMENT_SELECTED" &&
+        event.data.frameId === frameId
+      ) {
+        setSelectedElement({
+          frameId: event.data.frameId,
+          elementInfo: event.data.elementInfo,
+        });
+      }
+      if (
+        event.data.type === "FRAME_CONTENT_UPDATED" &&
+        event.data.frameId === frameId
+      ) {
+        updateFrame(frameId, {
+          htmlContent: event.data.htmlContent,
+          isDirty: true,
+        });
+      }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [frameId]);
+  }, [frameId, setSelectedElement, updateFrame]);
 
   const handleDownloadPng = useCallback(async () => {
     if (isDownloading) return;
@@ -147,7 +177,10 @@ const DeviceFrame = ({
       scale={scale}
       onClick={(e: any) => {
         e.stopPropagation();
-        if (toolMode === TOOL_MODE_ENUM.SELECT) {
+        if (
+          toolMode === TOOL_MODE_ENUM.SELECT ||
+          toolMode === TOOL_MODE_ENUM.EDIT
+        ) {
           setSelectedFrameId(frameId);
         }
       }}
@@ -226,12 +259,18 @@ const DeviceFrame = ({
                 srcDoc={fullHtml}
                 title={title}
                 sandbox="allow-scripts allow-same-origin"
+                onLoad={() => {
+                  iframeRef.current?.contentWindow?.postMessage(
+                    { type: "SET_TOOL_MODE", frameId, toolMode },
+                    "*"
+                  );
+                }}
                 style={{
                   width: "100%",
                   minHeight: `${minHeight}px`,
                   height: `${frameSize.height}px`,
                   border: "none",
-                  pointerEvents: "none",
+                  pointerEvents: toolMode === TOOL_MODE_ENUM.EDIT ? "auto" : "none",
                   display: "block",
                   background: "transparent",
                 }}

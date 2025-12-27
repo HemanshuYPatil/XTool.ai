@@ -9,6 +9,7 @@ import { TOOL_MODE_ENUM, ToolModeType } from "@/constant/canvas";
 import CanvasControls from "./canvas-controls";
 import DeviceFrame from "./device-frame";
 import HtmlDialog from "./html-dialog";
+import { EditingSidebar } from "./editing-sidebar";
 import { toast } from "sonner";
 
 const DEMO_HTML = `
@@ -33,6 +34,8 @@ const Canvas = ({
     loadingStatus,
     setLoadingStatus,
     plan,
+    setSelectedElement,
+    themeDirty,
   } = useCanvas();
   const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.SELECT);
   const [zoomPercent, setZoomPercent] = useState<number>(53);
@@ -75,6 +78,24 @@ const Canvas = ({
       saveThumbnailToProject(projectId);
     }
   }, [loadingStatus, projectId, saveThumbnailToProject]);
+
+  useEffect(() => {
+    if (toolMode !== TOOL_MODE_ENUM.EDIT) {
+      setSelectedElement(null);
+    }
+  }, [setSelectedElement, toolMode]);
+
+  useEffect(() => {
+    const hasUnsavedChanges =
+      frames.some((frame) => frame.isDirty) || themeDirty;
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [frames, themeDirty]);
 
   const onOpenHtmlDialog = () => {
     setOpenHtmlDialog(true);
@@ -289,6 +310,7 @@ const Canvas = ({
         open={openHtmlDialog}
         onOpenChange={setOpenHtmlDialog}
       />
+      <EditingSidebar isEditMode={toolMode === TOOL_MODE_ENUM.EDIT} />
     </>
   );
 };

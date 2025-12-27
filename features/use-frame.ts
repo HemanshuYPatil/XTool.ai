@@ -47,3 +47,21 @@ export const useDeleteFrame = (projectId: string) => {
     },
   });
 };
+
+export const useUpdateFrame = (projectId: string) => {
+  return useMutation({
+    mutationFn: async ({
+      frameId,
+      htmlContent,
+    }: {
+      frameId: string;
+      htmlContent: string;
+    }) => {
+      const res = await axios.patch(`/api/project/${projectId}/frame/update`, {
+        frameId,
+        htmlContent,
+      });
+      return res.data;
+    },
+  });
+};

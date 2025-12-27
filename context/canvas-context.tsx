@@ -24,6 +24,8 @@ interface CanvasContextType {
   setTheme: (id: string) => void;
   themes: ThemeType[];
   plan?: string;
+  themeDirty: boolean;
+  markThemeSaved: () => void;
 
   frames: FrameType[];
   setFrames: (frames: FrameType[]) => void;
@@ -33,6 +35,16 @@ interface CanvasContextType {
   selectedFrameId: string | null;
   selectedFrame: FrameType | null;
   setSelectedFrameId: (id: string | null) => void;
+
+  selectedElement: {
+    frameId: string;
+    elementInfo: any;
+  } | null;
+  setSelectedElement: (element: { frameId: string; elementInfo: any } | null) => void;
+  updateElement: (
+    frameId: string,
+    data: { styles?: any; text?: string; attributes?: any }
+  ) => void;
 
   loadingStatus: LoadingStatusType | null;
   setLoadingStatus: (status: LoadingStatusType | null) => void;
@@ -64,24 +76,69 @@ export const CanvasProvider = ({
   const [themeId, setThemeId] = useState<string>(
     resolvedInitialTheme || ""
   );
+  const [savedThemeId, setSavedThemeId] = useState<string>(
+    resolvedInitialTheme || ""
+  );
 
   const [frames, setFrames] = useState<FrameType[]>(initialFrames);
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
+  const [selectedElement, setSelectedElement] = useState<{
+    frameId: string;
+    elementInfo: any;
+  } | null>(null);
 
   const [loadingStatus, setLoadingStatus] = useState<LoadingStatusType | null>(
     null
   );
 
-  const [prevProjectId, setPrevProjectId] = useState(projectId);
-  if (projectId !== prevProjectId) {
-    setPrevProjectId(projectId);
+  const updateElement = useCallback(
+    (
+      frameId: string,
+      data: { styles?: any; text?: string; attributes?: any }
+    ) => {
+      const iframes = document.querySelectorAll("iframe");
+      iframes.forEach((iframe) => {
+        iframe.contentWindow?.postMessage(
+          { type: "UPDATE_ELEMENT", frameId, ...data },
+          "*"
+        );
+      });
+
+      if (selectedElement && selectedElement.frameId === frameId) {
+        setSelectedElement((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            elementInfo: {
+              ...prev.elementInfo,
+              text: data.text !== undefined ? data.text : prev.elementInfo.text,
+              styles: {
+                ...prev.elementInfo.styles,
+                ...data.styles,
+              },
+              attributes: {
+                ...prev.elementInfo.attributes,
+                ...data.attributes,
+              },
+            },
+          };
+        });
+      }
+    },
+    [selectedElement]
+  );
+
+  useEffect(() => {
     setLoadingStatus(hasInitialData ? "idle" : "running");
     setFrames(initialFrames);
     setThemeId(resolvedInitialTheme || "");
+    setSavedThemeId(resolvedInitialTheme || "");
     setSelectedFrameId(null);
-  }
+    setSelectedElement(null);
+  }, [hasInitialData, initialFrames, resolvedInitialTheme, projectId]);
 
   const theme = availableThemes.find((t) => t.id === themeId);
+  const themeDirty = Boolean(themeId && themeId !== savedThemeId);
   const selectedFrame =
     selectedFrameId && frames.length !== 0
       ? frames.find((f) => f.id === selectedFrameId) || null
@@ -167,11 +224,16 @@ export const CanvasProvider = ({
         },
         themes: availableThemes,
         plan,
+        themeDirty,
+        markThemeSaved: () => setSavedThemeId(themeId),
         frames,
         setFrames,
         selectedFrameId,
         selectedFrame,
         setSelectedFrameId,
+        selectedElement,
+        setSelectedElement,
+        updateElement,
         updateFrame,
         addFrame,
         loadingStatus,

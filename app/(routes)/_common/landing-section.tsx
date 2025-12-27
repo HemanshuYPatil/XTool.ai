@@ -14,6 +14,7 @@ import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { Spinner } from "@/components/ui/spinner";
 import { ProjectType } from "@/types/project";
 import { useRouter } from "next/navigation";
+import { StudioLoader } from "@/components/studio-loader";
 import {
   FolderOpenDotIcon,
   MoreHorizontalIcon,
@@ -48,6 +49,7 @@ type LandingSectionProps = {
   initialIsDeveloper?: boolean;
   showHeader?: boolean;
   mode?: "page" | "module";
+  plan?: string;
 };
 
 const LandingSection = ({
@@ -55,6 +57,7 @@ const LandingSection = ({
   initialIsDeveloper,
   showHeader = true,
   mode = "page",
+  plan,
 }: LandingSectionProps) => {
   const { user } = useKindeBrowserClient();
   const [promptText, setPromptText] = useState<string>("");
@@ -77,6 +80,7 @@ const LandingSection = ({
   const deleteProjectMutation = useDeleteProject();
   const renameProjectMutation = useRenameProject();
   const developer = Boolean(initialIsDeveloper);
+  const isPro = plan === "PRO" || developer;
   useEffect(() => {
     if (!projects?.length) {
       setSelectedProjects([]);
@@ -240,6 +244,7 @@ const LandingSection = ({
         isModule && "rounded-3xl border bg-card/70 shadow-sm"
       )}
     >
+      {isPending && <StudioLoader />}
       <div className="flex flex-col">
         {showHeader ? <Header initialUser={initialUser} /> : null}
 
@@ -296,6 +301,48 @@ const LandingSection = ({
                   >
                     Model details
                   </Button>
+                </div>
+              )}
+              {isPro && (
+                <div
+                  data-hero
+                  className="w-full rounded-2xl border border-primary/20 bg-[linear-gradient(140deg,rgba(14,165,233,0.16),rgba(99,102,241,0.12))] p-4 text-left shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/80">
+                        Pro Studio Controls
+                      </p>
+                      <p className="mt-1 text-sm font-medium">
+                        Generate richer flows with premium layout intelligence.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full border border-primary/30 bg-background/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+                        Pro
+                      </span>
+                      <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Advanced
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    {[
+                      "Multi-screen flow",
+                      "Brand kit injection",
+                      "Responsive variants",
+                    ].map((label) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold"
+                      >
+                        <span>{label}</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
+                          On
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

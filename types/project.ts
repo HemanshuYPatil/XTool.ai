@@ -19,4 +19,5 @@ export type FrameType = {
   updatedAt?: Date;
 
   isLoading?: boolean;
+  isDirty?: boolean;
 };

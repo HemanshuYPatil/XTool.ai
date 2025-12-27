@@ -5,7 +5,7 @@ import { useCanvas } from "@/context/canvas-context";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import PromptInput from "../prompt-input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { parseThemeColors } from "@/lib/themes";
 import ThemeSelector from "./theme-selector";
 import { Separator } from "../ui/separator";
@@ -14,7 +14,9 @@ import {
   useGenerateDesignById,
   useUpdateProject,
 } from "@/features/use-project-id";
+import { useUpdateFrame } from "@/features/use-frame";
 import { Spinner } from "../ui/spinner";
+import { toast } from "sonner";
 
 const CanvasFloatingToolbar = ({
   projectId,
@@ -25,23 +27,87 @@ const CanvasFloatingToolbar = ({
   isScreenshotting: boolean;
   onScreenshot: () => void;
 }) => {
-  const { themes, theme: currentTheme, setTheme, plan } = useCanvas();
+  const {
+    themes,
+    theme: currentTheme,
+    setTheme,
+    plan,
+    frames,
+    updateFrame: updateFrameState,
+    loadingStatus,
+    themeDirty,
+    markThemeSaved,
+  } = useCanvas();
   const canExport = plan === "PRO";
   const [promptText, setPromptText] = useState<string>("");
+  const [isSavingFrames, setIsSavingFrames] = useState(false);
 
   const { mutate, isPending } = useGenerateDesignById(projectId);
 
   const update = useUpdateProject(projectId);
+  const updateFrameMutation = useUpdateFrame(projectId);
+
+  const isGenerating =
+    Boolean(loadingStatus) &&
+    loadingStatus !== "idle" &&
+    loadingStatus !== "completed";
 
   const handleAIGenerate = () => {
-    if (!promptText) return;
+    if (!promptText || isGenerating) return;
     mutate(promptText);
   };
 
-  const handleUpdate = () => {
-    if (!currentTheme) return;
-    update.mutate(currentTheme.id);
+  const hasDirtyFrames = frames.some((frame) => frame.isDirty);
+  const hasUnsavedChanges = hasDirtyFrames || themeDirty;
+
+  const handleUpdate = async () => {
+    if (!hasUnsavedChanges) return;
+    if (isSavingFrames) return;
+    setIsSavingFrames(true);
+    try {
+      const dirtyFrames = frames.filter((frame) => frame.isDirty);
+      if (dirtyFrames.length > 0) {
+        await Promise.all(
+          dirtyFrames.map((frame) =>
+            updateFrameMutation.mutateAsync({
+              frameId: frame.id,
+              htmlContent: frame.htmlContent,
+            })
+          )
+        );
+        dirtyFrames.forEach((frame) =>
+          updateFrameState(frame.id, { isDirty: false })
+        );
+      }
+      if (currentTheme && themeDirty) {
+        await update.mutateAsync(currentTheme.id);
+        markThemeSaved();
+      }
+      toast.success("Project saved");
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to save changes");
+    } finally {
+      setIsSavingFrames(false);
+    }
   };
+  const isSaving = isSavingFrames || update.isPending;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "s"
+      ) {
+        event.preventDefault();
+        if (hasUnsavedChanges) {
+          handleUpdate();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasUnsavedChanges, handleUpdate]);
 
   return (
     <div
@@ -79,9 +145,10 @@ const CanvasFloatingToolbar = ({
                 rounded-xl! shadow-none border-muted
                 "
                 hideSubmitBtn={true}
+                isLoading={isPending || isGenerating}
               />
               <Button
-                disabled={isPending}
+                disabled={isPending || isGenerating || !promptText.trim()}
                 className="mt-2 w-full
                   bg-linear-to-r
                  from-purple-500 to-indigo-600
@@ -90,7 +157,7 @@ const CanvasFloatingToolbar = ({
                 "
                 onClick={handleAIGenerate}
               >
-                {isPending ? <Spinner /> : <>Design</>}
+                {isPending || isGenerating ? <Spinner /> : <>Design</>}
               </Button>
             </PopoverContent>
           </Popover>
@@ -145,6 +212,23 @@ const CanvasFloatingToolbar = ({
           <Separator orientation="vertical" className="h-4!" />
 
           <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-1.5 text-xs font-medium text-muted-foreground sm:flex">
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  isSaving
+                    ? "bg-amber-500"
+                    : hasUnsavedChanges
+                    ? "bg-rose-500"
+                    : "bg-emerald-500"
+                )}
+              />
+              {isSaving
+                ? "Saving..."
+                : hasUnsavedChanges
+                ? "Unsaved changes"
+                : "All changes saved"}
+            </div>
             <Button
               variant="outline"
               size="icon-sm"
@@ -158,21 +242,28 @@ const CanvasFloatingToolbar = ({
                 <CameraIcon className="size-4.5" />
               )}
             </Button>
+            {hasUnsavedChanges ? (
             <Button
               variant="default"
               size="sm"
               className="rounded-full cursor-pointer"
               onClick={handleUpdate}
+              disabled={isSaving}
             >
-              {update.isPending ? (
+              {isSaving ? (
                 <Spinner />
               ) : (
                 <>
                   <Save className="size-4" />
                   Save
-                </>
-              )}
-            </Button>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                All changes saved
+              </span>
+            )}
           </div>
         </div>
       </div>

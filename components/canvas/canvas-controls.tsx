@@ -1,7 +1,7 @@
 import { TOOL_MODE_ENUM, ToolModeType } from "@/constant/canvas";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
-import { HandIcon, MinusIcon, MousePointerIcon, PlusIcon } from "lucide-react";
+import { HandIcon, MinusIcon, MousePointerIcon, Pencil, PlusIcon } from "lucide-react";
 import { Separator } from "../ui/separator";
 
 type PropsType = {
@@ -49,6 +49,17 @@ const CanvasControls = ({
           onClick={() => setToolMode(TOOL_MODE_ENUM.HAND)}
         >
           <HandIcon />
+        </Button>
+        <Button
+          size="icon-sm"
+          variant="ghost"
+          className={cn(
+            "rounded-full cursor-pointer hover:bg-white/20! text-white!",
+            toolMode === TOOL_MODE_ENUM.EDIT && "bg-white/20"
+          )}
+          onClick={() => setToolMode(TOOL_MODE_ENUM.EDIT)}
+        >
+          <Pencil className="size-4" />
         </Button>
       </div>
 

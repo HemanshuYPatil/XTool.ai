@@ -12,6 +12,16 @@ import {
   MoreHorizontalIcon,
   SunIcon,
   XIcon,
+  Code2Icon,
+  SmartphoneIcon,
+  GlobeIcon,
+  LayersIcon,
+  Share2Icon,
+  UsersIcon,
+  MessageSquareIcon,
+  HistoryIcon,
+  CheckCircle2Icon,
+  ExternalLinkIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -39,15 +49,18 @@ const Header = ({
   projectId,
   visibility = "PRIVATE",
   themeId,
+  plan,
 }: {
   projectName?: string;
   projectId?: string;
   visibility?: "PRIVATE" | "PUBLIC";
   themeId?: string | null;
+  plan?: string;
 }) => {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
+  const isPro = plan === "PRO";
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerSection, setDrawerSection] = useState<
     "publish" | "export" | "engagement"
@@ -224,10 +237,14 @@ const Header = ({
   return (
     <div className="sticky top-0 z-30">
       <header
-        className="border-b border-border/40
-    bg-card/50 backdrop-blur-sm
-    "
+        className={cn(
+          "relative border-b border-border/40 bg-card/50 backdrop-blur-sm",
+          isPro && "bg-[linear-gradient(120deg,rgba(14,165,233,0.12),rgba(99,102,241,0.08))]"
+        )}
       >
+        {isPro && (
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_60%)]" />
+        )}
         <div
           className="flex items-center justify-between px-4
           py-2
@@ -246,9 +263,25 @@ const Header = ({
             <p className="max-w-[200px] truncate font-medium">
               {projectTitle}
             </p>
+            {isPro && (
+              <span className="rounded-full border border-primary/30 bg-background/70 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-primary">
+                Pro Studio
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
+            {isPro && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-primary/20 bg-background/70 text-xs font-semibold text-primary hover:bg-background"
+                onClick={() => openDrawer("export")}
+              >
+                <LayersIcon className="mr-1.5 size-3.5" />
+                Pro Export
+              </Button>
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -324,334 +357,372 @@ const Header = ({
         />
         <aside
           className={cn(
-            "absolute right-0 top-0 h-full w-full max-w-md border-l border-border/60 bg-background shadow-xl transition-transform",
+            "absolute right-0 top-0 h-full w-full max-w-md border-l border-border/60 bg-background shadow-2xl transition-transform duration-300 ease-in-out",
             isDrawerOpen ? "translate-x-0" : "translate-x-full"
           )}
         >
-          <div className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-border/60 px-6 py-5 bg-muted/10">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Project panel
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground/70">
+                Project Management
               </p>
-              <h2 className="text-lg font-semibold">Publishing & export</h2>
+              <h2 className="text-xl font-bold tracking-tight">Project Settings</h2>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full hover:bg-muted transition-colors"
               onClick={() => setIsDrawerOpen(false)}
             >
-              <XIcon className="size-4" />
+              <XIcon className="size-5" />
             </Button>
           </div>
 
-          <div className="p-6 space-y-6 text-sm">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant={drawerSection === "publish" ? "default" : "outline"}
-                onClick={() => setDrawerSection("publish")}
-              >
-                Publish
-              </Button>
-              <Button
-                size="sm"
-                variant={drawerSection === "export" ? "default" : "outline"}
-                onClick={() => setDrawerSection("export")}
-              >
-                Export
-              </Button>
-              <Button
-                size="sm"
-                variant={drawerSection === "engagement" ? "default" : "outline"}
-                onClick={() => setDrawerSection("engagement")}
-              >
-                Engagement
-              </Button>
+          <div className="flex flex-col h-[calc(100%-85px)]">
+            <div className="px-6 py-4 border-b border-border/40 bg-muted/5">
+              <div className="flex p-1 bg-muted/50 rounded-lg gap-1">
+                {[
+                  { id: "publish", label: "Publish", icon: GlobeIcon },
+                  { id: "export", label: "Export", icon: Code2Icon },
+                  { id: "engagement", label: "Engagement", icon: UsersIcon },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setDrawerSection(tab.id as any)}
+                    className={cn(
+                      "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all",
+                      drawerSection === tab.id
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                    )}
+                  >
+                    <tab.icon className="size-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {drawerSection === "publish" ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold">Visibility</p>
-                    <p className="text-xs text-muted-foreground">
-                      Private by default. Switch to public when you are ready to
-                      share globally.
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
-                      isPublic
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {isUpdatingVisibility ? (
-                      <span className="inline-flex items-center gap-2">
-                        <Spinner className="size-3.5" />
-                        Updating
-                      </span>
-                    ) : (
-                      visibilityLabel
-                    )}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={currentVisibility === "PRIVATE" ? "default" : "outline"}
-                    disabled={isUpdatingVisibility}
-                    onClick={() => handleVisibilityChange("PRIVATE")}
-                  >
-                    Keep private
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={currentVisibility === "PUBLIC" ? "default" : "outline"}
-                    disabled={isUpdatingVisibility}
-                    onClick={() => handleVisibilityChange("PUBLIC")}
-                  >
-                    Publish globally
-                  </Button>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-                  {isPublic
-                    ? "Public projects appear in the community gallery and can be viewed by anyone with the link."
-                    : "Private projects stay visible to you and your workspace only."}
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-background p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold">Shareable link</p>
-                      <p className="text-xs text-muted-foreground">
-                        Choose access level before generating a share link.
-                      </p>
-                    </div>
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {sharePermission === "EDIT" ? "Editable" : "Read-only"}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant={
-                        sharePermission === "READ_ONLY" ? "default" : "outline"
-                      }
-                      onClick={() => setSharePermission("READ_ONLY")}
-                      disabled={Boolean(shareLink)}
-                    >
-                      Read-only
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={sharePermission === "EDIT" ? "default" : "outline"}
-                      onClick={() => setSharePermission("EDIT")}
-                      disabled={Boolean(shareLink)}
-                    >
-                      Editable
-                    </Button>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-center">
-                    <Input
-                      readOnly
-                      value={shareLink ?? "Generate a share link to continue."}
-                      className="rounded-xl text-xs"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleCreateShareLink}
-                      disabled={!projectId || isSharing || Boolean(shareLink)}
-                    >
-                      {isSharing ? (
-                        <>
-                          <Spinner className="size-3.5" />
-                          Generating
-                        </>
-                      ) : (
-                        "Generate link"
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopyShareLink}
-                      disabled={!shareLink || isCopying}
-                    >
-                      {isCopying ? (
-                        <>
-                          <Spinner className="size-3.5" />
-                          Copying
-                        </>
-                      ) : (
-                        "Copy link"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-background p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold">Release notes</p>
-                      <p className="text-xs text-muted-foreground">
-                        Keep viewers in sync with what changed.
-                      </p>
-                    </div>
-                    <ChevronRightIcon className="size-4 text-muted-foreground" />
-                  </div>
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Coming soon: publish updates and changelog history.
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            {drawerSection === "export" ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold">Export UI</p>
-                  <p className="text-xs text-muted-foreground">
-                    Export support is on the way. Choose a target format to get
-                    notified first.
-                  </p>
-                </div>
-
-                <div className="grid gap-3">
-                  {[
-                    "HTML",
-                    "React",
-                    "Flutter",
-                    "React Native",
-                  ].map((label) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/30 px-4 py-3"
-                    >
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+              {drawerSection === "publish" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium">{label}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Coming soon
+                        <h3 className="text-sm font-bold">Project Visibility</h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Control who can see and access your project.
                         </p>
                       </div>
-                      <Button size="sm" variant="outline" disabled>
-                        Notify me
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                        isPublic 
+                          ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" 
+                          : "bg-muted text-muted-foreground border border-border/50"
+                      )}>
+                        {isUpdatingVisibility ? (
+                          <Spinner className="size-3" />
+                        ) : (
+                          <div className={cn("size-1.5 rounded-full", isPublic ? "bg-emerald-500" : "bg-muted-foreground")} />
+                        )}
+                        {visibilityLabel}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant={currentVisibility === "PRIVATE" ? "default" : "outline"}
+                        className={cn(
+                          "h-20 flex-col gap-2 rounded-xl border-2 transition-all",
+                          currentVisibility === "PRIVATE" ? "border-primary bg-primary/5 hover:bg-primary/10 text-primary" : "border-border/50 hover:border-border"
+                        )}
+                        disabled={isUpdatingVisibility}
+                        onClick={() => handleVisibilityChange("PRIVATE")}
+                      >
+                        <div className="size-8 rounded-full bg-muted flex items-center justify-center">
+                          <MoonIcon className="size-4" />
+                        </div>
+                        <span className="text-xs font-bold">Private</span>
+                      </Button>
+                      <Button
+                        variant={currentVisibility === "PUBLIC" ? "default" : "outline"}
+                        className={cn(
+                          "h-20 flex-col gap-2 rounded-xl border-2 transition-all",
+                          currentVisibility === "PUBLIC" ? "border-primary bg-primary/5 hover:bg-primary/10 text-primary" : "border-border/50 hover:border-border"
+                        )}
+                        disabled={isUpdatingVisibility}
+                        onClick={() => handleVisibilityChange("PUBLIC")}
+                      >
+                        <div className="size-8 rounded-full bg-muted flex items-center justify-center">
+                          <GlobeIcon className="size-4" />
+                        </div>
+                        <span className="text-xs font-bold">Public</span>
                       </Button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+                  </section>
 
-            {drawerSection === "engagement" ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold">Engagement tools</p>
-                  <p className="text-xs text-muted-foreground">
-                    Keep your team and stakeholders connected to the project.
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-border/60 bg-background p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <section className="space-y-4 pt-4 border-t border-border/40">
                     <div>
-                      <p className="text-sm font-semibold">Contribution queue</p>
-                      <p className="text-xs text-muted-foreground">
-                        Review proposed edits before they apply to your project.
+                      <h3 className="text-sm font-bold">Collaboration Link</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Share this link with others to collaborate.
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={fetchContributions}
-                      disabled={isLoadingContributions}
-                    >
-                      {isLoadingContributions ? (
-                        <>
-                          <Spinner className="size-3.5" />
-                          Refreshing
-                        </>
-                      ) : (
-                        "Refresh"
-                      )}
-                    </Button>
-                  </div>
-                  <div className="space-y-3">
-                    {isLoadingContributions ? (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Spinner className="size-3.5" />
-                        Loading contributions...
-                      </div>
-                    ) : contributions.length ? (
-                      contributions.map((item) => (
-                        <div
-                          key={item.id}
-                          className="rounded-lg border border-border/60 bg-muted/20 px-3 py-3"
+
+                    <div className="space-y-3 p-4 rounded-2xl border border-border/60 bg-muted/10">
+                      <div className="flex items-center gap-2 p-1 bg-background rounded-lg border border-border/40">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={cn(
+                            "flex-1 h-8 text-[11px] font-bold rounded-md transition-all",
+                            sharePermission === "READ_ONLY" ? "bg-muted text-foreground" : "text-muted-foreground"
+                          )}
+                          onClick={() => setSharePermission("READ_ONLY")}
+                          disabled={Boolean(shareLink)}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {item.author?.name ||
-                                  item.author?.email ||
-                                  "External contributor"}
-                              </p>
+                          Read-only
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className={cn(
+                            "flex-1 h-8 text-[11px] font-bold rounded-md transition-all",
+                            sharePermission === "EDIT" ? "bg-muted text-foreground" : "text-muted-foreground"
+                          )}
+                          onClick={() => setSharePermission("EDIT")}
+                          disabled={Boolean(shareLink)}
+                        >
+                          Editable
+                        </Button>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            readOnly
+                            value={shareLink ?? ""}
+                            placeholder="Generate a link..."
+                            className="h-10 pr-10 text-xs bg-background border-border/40 rounded-xl"
+                          />
+                          {shareLink && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <CheckCircle2Icon className="size-3.5 text-emerald-500" />
                             </div>
-                            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                              Pending
-                            </span>
-                          </div>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleOpenContribution(item)}
-                            >
-                              View diff
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleOpenContribution(item)}
-                            >
-                              Review
-                            </Button>
+                          )}
+                        </div>
+                        {!shareLink ? (
+                          <Button
+                            size="sm"
+                            className="h-10 px-4 rounded-xl font-bold"
+                            onClick={handleCreateShareLink}
+                            disabled={!projectId || isSharing}
+                          >
+                            {isSharing ? <Spinner className="size-3.5" /> : "Generate"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-10 px-4 rounded-xl font-bold border-border/60 hover:bg-muted"
+                            onClick={handleCopyShareLink}
+                            disabled={isCopying}
+                          >
+                            {isCopying ? <Spinner className="size-3.5" /> : "Copy"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="p-4 rounded-2xl border border-border/60 bg-muted/5 hover:bg-muted/10 transition-colors cursor-pointer group">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="size-9 rounded-xl bg-background border border-border/40 flex items-center justify-center group-hover:border-primary/30 transition-colors">
+                          <HistoryIcon className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold">Release Notes</h4>
+                          <p className="text-[11px] text-muted-foreground">Manage project updates</p>
+                        </div>
+                      </div>
+                      <div className="px-2 py-0.5 rounded-md bg-muted text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                        Soon
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {drawerSection === "export" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold">Export Options</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download your project in various production-ready formats.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { id: "html", label: "HTML/CSS", icon: GlobeIcon, color: "text-orange-500", bg: "bg-orange-500/10" },
+                      { id: "react", label: "React", icon: Code2Icon, color: "text-blue-500", bg: "bg-blue-500/10" },
+                      { id: "flutter", label: "Flutter", icon: SmartphoneIcon, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+                      { id: "rn", label: "React Native", icon: SmartphoneIcon, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+                    ].map((item) => (
+                      <div
+                        key={item.id}
+                        className="group relative flex flex-col p-4 rounded-2xl border border-border/60 bg-background hover:border-primary/30 hover:shadow-md transition-all cursor-default overflow-hidden"
+                      >
+                        <div className={cn("size-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110", item.bg)}>
+                          <item.icon className={cn("size-5", item.color)} />
+                        </div>
+                        <h4 className="text-sm font-bold mb-1">{item.label}</h4>
+                        <p className="text-[10px] text-muted-foreground font-medium">Production Code</p>
+                        
+                        <div className="mt-4">
+                          <Button size="sm" variant="outline" className="w-full h-8 text-[10px] font-bold rounded-lg border-border/40 opacity-50" disabled>
+                            Notify Me
+                          </Button>
+                        </div>
+
+                        <div className="absolute top-2 right-2">
+                          <div className="px-1.5 py-0.5 rounded bg-muted text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
+                            Soon
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        No pending contributions yet.
-                      </p>
-                    )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-4 rounded-2xl border border-dashed border-border/80 bg-muted/5 flex flex-col items-center justify-center text-center py-8">
+                    <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                      <LayersIcon className="size-6 text-muted-foreground/40" />
+                    </div>
+                    <h4 className="text-sm font-bold text-muted-foreground">More Formats</h4>
+                    <p className="text-[11px] text-muted-foreground/60 mt-1 max-w-[200px]">
+                      We're working on Vue, Svelte, and Figma export support.
+                    </p>
                   </div>
                 </div>
+              )}
 
-                <div className="grid gap-3">
-                  {[
-                    "Shareable review link",
-                    "Invite collaborators",
-                    "Collect feedback",
-                    "Version snapshots",
-                  ].map((label) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between rounded-xl border border-border/60 bg-background px-4 py-3"
-                    >
-                      <p className="text-sm font-medium">{label}</p>
-                      <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Coming soon
-                      </span>
+              {drawerSection === "engagement" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold">Engagement Tools</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Collaborate with your team and gather feedback.
+                    </p>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
+                        Contribution Queue
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-[10px] font-bold hover:bg-muted"
+                        onClick={fetchContributions}
+                        disabled={isLoadingContributions}
+                      >
+                        {isLoadingContributions ? <Spinner className="size-3 mr-1.5" /> : <HistoryIcon className="size-3 mr-1.5" />}
+                        Refresh
+                      </Button>
                     </div>
-                  ))}
+
+                    <div className="space-y-3">
+                      {isLoadingContributions ? (
+                        <div className="py-8 flex flex-col items-center justify-center gap-3 border border-border/40 rounded-2xl bg-muted/5">
+                          <Spinner className="size-5 text-primary/40" />
+                          <p className="text-xs text-muted-foreground font-medium">Checking for updates...</p>
+                        </div>
+                      ) : contributions.length ? (
+                        contributions.map((item) => (
+                          <div
+                            key={item.id}
+                            className="group p-4 rounded-2xl border border-border/60 bg-background hover:border-primary/30 transition-all"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                  {item.author?.name?.charAt(0) || item.author?.email?.charAt(0) || "U"}
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-bold leading-none mb-1">{item.title}</h5>
+                                  <p className="text-[11px] text-muted-foreground">
+                                    by {item.author?.name || item.author?.email || "External"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[9px] font-bold uppercase tracking-wider border border-amber-500/20">
+                                Pending
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 text-[11px] font-bold rounded-lg border-border/40 hover:bg-muted"
+                                onClick={() => handleOpenContribution(item)}
+                              >
+                                View Diff
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 text-[11px] font-bold rounded-lg"
+                                onClick={() => handleOpenContribution(item)}
+                              >
+                                Review
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-10 flex flex-col items-center justify-center text-center border border-dashed border-border/80 rounded-2xl bg-muted/5">
+                          <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                            <MessageSquareIcon className="size-6 text-muted-foreground/30" />
+                          </div>
+                          <h5 className="text-sm font-bold text-muted-foreground">No contributions</h5>
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">
+                            New proposals will appear here for review.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  <section className="space-y-3 pt-4 border-t border-border/40">
+                    <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-4">
+                      Upcoming Features
+                    </h4>
+                    <div className="grid gap-3">
+                      {[
+                        { label: "Review Links", icon: ExternalLinkIcon },
+                        { label: "Team Invites", icon: UsersIcon },
+                        { label: "Feedback Mode", icon: MessageSquareIcon },
+                        { label: "Version Snapshots", icon: HistoryIcon },
+                      ].map((tool) => (
+                        <div
+                          key={tool.label}
+                          className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-muted/5 opacity-70"
+                        >
+                          <div className="flex items-center gap-3">
+                            <tool.icon className="size-4 text-muted-foreground" />
+                            <span className="text-xs font-bold">{tool.label}</span>
+                          </div>
+                          <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">
+                            Soon
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
                 </div>
-              </div>
-            ) : null}
+              )}
+            </div>
           </div>
         </aside>
       </div>

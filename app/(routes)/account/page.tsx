@@ -1,9 +1,9 @@
-import Header from "../_common/header";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
 import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
 import { isDeveloper } from "@/lib/developers";
 import DeveloperTools from "@/components/developer-tools";
+import { CreatorLayout } from "@/components/creator/creator-layout";
 
 const AccountPage = async () => {
   const { getUser, getClaim } = getKindeServerSession();
@@ -31,34 +31,7 @@ const AccountPage = async () => {
   const workspaceLabel = emailDomain
     ? `${emailDomain.split(".")[0]} workspace`
     : "Personal workspace";
-  const passwordChangedAt =
-    typeof passwordClaim?.value === "string" ? passwordClaim.value : "";
-  const mfaRaw = typeof mfaClaim?.value === "string" ? mfaClaim.value : "";
-  const mfaStatus = (() => {
-    const normalized = mfaRaw.trim().toLowerCase();
-    if (!normalized) return "Not available";
-    if (["true", "1", "enabled", "yes"].includes(normalized)) return "Enabled";
-    if (["false", "0", "disabled", "no"].includes(normalized))
-      return "Disabled";
-    return "Not available";
-  })();
-  const passwordLabel = (() => {
-    if (!passwordChangedAt) return "Not available";
-    const numeric = Number(passwordChangedAt);
-    let date: Date | null = null;
-    if (!Number.isNaN(numeric)) {
-      const ms = numeric > 1_000_000_000_000 ? numeric : numeric * 1000;
-      date = new Date(ms);
-    } else {
-      const parsed = Date.parse(passwordChangedAt);
-      if (!Number.isNaN(parsed)) date = new Date(parsed);
-    }
-    if (!date || Number.isNaN(date.getTime())) return "Not available";
-    const diffMs = Date.now() - date.getTime();
-    const days = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-    if (days === 0) return "Today";
-    return `${days} day${days === 1 ? "" : "s"} ago`;
-  })();
+  
   const planLabel = developer
     ? "Developer"
     : subscriptionData?.plan === "PRO"
@@ -71,125 +44,100 @@ const AccountPage = async () => {
     : "1 seat";
 
   return (
-    <div className="min-h-screen w-full bg-background">
-      <Header />
-
-      <section className="pt-16 pb-10">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="space-y-3">
-            <p className="text-xs uppercase tracking-[0.2em] text-primary">
-              Account
-            </p>
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
-              Manage your profile and workspace
-            </h1>
-            <p className="text-foreground/80 max-w-2xl">
-              Keep your details, preferences, and team visibility aligned with
-              how you build in XTool.ai.
-            </p>
-          </div>
+    <CreatorLayout user={user}>
+      <div className="space-y-12 py-8">
+        <div className="space-y-3 border-b pb-8">
+          <p className="text-xs uppercase tracking-[0.2em] text-primary font-bold">
+            Account
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            Manage your profile and workspace
+          </h1>
+          <p className="text-muted-foreground max-w-2xl">
+            Keep your details, preferences, and team visibility aligned with
+            how you build in XTool.ai.
+          </p>
         </div>
-      </section>
 
-      <section className="pb-16">
-        <div className="mx-auto max-w-6xl px-6 grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl border bg-card/70 p-6 shadow-sm lg:col-span-2">
-            <h2 className="text-lg font-semibold">Profile details</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Update your name, role, and contact information.
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+        <div className="grid gap-8 lg:grid-cols-3">
+          <div className="rounded-3xl border bg-card/40 p-8 shadow-sm lg:col-span-2 space-y-8">
+            <div>
+              <h2 className="text-xl font-bold">Profile details</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Update your name, role, and contact information.
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="rounded-2xl border bg-background/50 p-5 transition-colors hover:border-primary/20">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Full name
                 </p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="mt-2 text-sm font-bold">
                   {fullName || fallbackName}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-2xl border bg-background/50 p-5 transition-colors hover:border-primary/20">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Role
                 </p>
-                <p className="mt-2 text-sm font-medium">Member</p>
+                <p className="mt-2 text-sm font-bold">Member</p>
               </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-2xl border bg-background/50 p-5 transition-colors hover:border-primary/20">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Email
                 </p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="mt-2 text-sm font-bold">
                   {user?.email || "Not set"}
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-2xl border bg-background/50 p-5 transition-colors hover:border-primary/20">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Workspace
                 </p>
-                <p className="mt-2 text-sm font-medium">{workspaceLabel}</p>
+                <p className="mt-2 text-sm font-bold">{workspaceLabel}</p>
               </div>
             </div>
           </div>
 
-          <div className="rounded-3xl border bg-muted/20 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">Plan snapshot</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Track your current usage at a glance.
-            </p>
-            <div className="mt-6 space-y-4">
-              <div className="rounded-2xl border border-border/60 bg-background p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-3xl border bg-primary/5 p-8 shadow-sm space-y-8">
+            <div>
+              <h2 className="text-xl font-bold">Plan snapshot</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Track your current usage at a glance.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="rounded-2xl border bg-background p-5 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Active plan
                 </p>
-                <p className="mt-2 text-sm font-medium">{planLabel}</p>
+                <p className="mt-2 text-sm font-bold">{planLabel}</p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-2xl border bg-background p-5 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Projects generated
                 </p>
-                <p className="mt-2 text-sm font-medium">
+                <p className="mt-2 text-sm font-bold">
                   {projectCount} total
                 </p>
               </div>
-              <div className="rounded-2xl border border-border/60 bg-background p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              <div className="rounded-2xl border bg-background p-5 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Seats
                 </p>
-                <p className="mt-2 text-sm font-medium">{seatsLabel}</p>
+                <p className="mt-2 text-sm font-bold">{seatsLabel}</p>
               </div>
             </div>
           </div>
 
-          {/* <div className="rounded-3xl border bg-card/70 p-6 shadow-sm lg:col-span-3">
-            <h2 className="text-lg font-semibold">Security and access</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Keep your workspace protected with modern authentication options.
-            </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Password
-                </p>
-                <p className="mt-2 text-sm font-medium">{passwordLabel}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Two-factor auth
-                </p>
-                <p className="mt-2 text-sm font-medium">{mfaStatus}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 p-4">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Sessions
-                </p>
-                <p className="mt-2 text-sm font-medium">Not available</p>
-              </div>
+          {developer ? (
+            <div className="lg:col-span-3">
+              <DeveloperTools />
             </div>
-          </div> */}
-
-          {developer ? <DeveloperTools /> : null}
+          ) : null}
         </div>
-      </section>
-    </div>
+      </div>
+    </CreatorLayout>
   );
 };
 

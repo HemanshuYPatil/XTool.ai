@@ -4,8 +4,9 @@ import { useGetProjectById } from "@/features/use-project-id";
 import { useParams, useRouter } from "next/navigation";
 import Header from "./_common/header";
 import Canvas from "@/components/canvas";
-import { CanvasProvider } from "@/context/canvas-context";
+import { CanvasProvider, useCanvas } from "@/context/canvas-context";
 import { useEffect } from "react";
+import { StudioLoader } from "@/components/studio-loader";
 
 const Page = () => {
   const params = useParams();
@@ -53,6 +54,7 @@ const Page = () => {
         projectId={project?.id}
         visibility={project?.visibility}
         themeId={project?.theme}
+        plan={project?.plan}
       />
 
       <CanvasProvider
@@ -62,17 +64,36 @@ const Page = () => {
         projectId={project?.id}
         plan={project?.plan}
       >
-        <div className="flex flex-1 overflow-hidden">
-          <div className="relative flex-1">
-            <Canvas
-              projectId={project?.id}
-              projectName={project?.name}
-              isPending={isPending}
-            />
-          </div>
-        </div>
+        <ProjectContent project={project} isPending={isPending} />
       </CanvasProvider>
     </div>
+  );
+};
+
+const ProjectContent = ({
+  project,
+  isPending,
+}: {
+  project: any;
+  isPending: boolean;
+}) => {
+  const { loadingStatus } = useCanvas();
+  const isDone = !isPending && (loadingStatus === "idle" || loadingStatus === "completed");
+  const showLoader = isPending || (loadingStatus && loadingStatus !== "idle" && loadingStatus !== "completed");
+
+  return (
+    <>
+      {(showLoader || isDone) && <StudioLoader isDone={isDone} />}
+      <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex-1">
+          <Canvas
+            projectId={project?.id}
+            projectName={project?.name}
+            isPending={isPending}
+          />
+        </div>
+      </div>
+    </>
   );
 };
 
