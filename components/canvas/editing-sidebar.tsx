@@ -229,6 +229,7 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
                   </section>
                 </div>
               ) : (
+              <>
               {activeTab === "design" && (
               <>
                 {/* Appearance Section */}
@@ -559,7 +560,6 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
                   </>
                 )}
               </>
-              )}
               )}
             </div>
           )}
