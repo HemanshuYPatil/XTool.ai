@@ -52,8 +52,17 @@ const DeviceFrame = ({
   const deleteMutation = useDeleteFrame(projectId);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const editorHtmlRef = useRef<string | null>(null);
   const isSelected = selectedFrameId === frameId;
-  const fullHtml = getHTMLWrapper(html, title, theme_style, frameId);
+  const [liveHtml, setLiveHtml] = useState(html);
+  const fullHtml = getHTMLWrapper(liveHtml, title, theme_style, frameId);
+
+  useEffect(() => {
+    if (html === undefined) return;
+    const isEditorHtml = editorHtmlRef.current === html;
+    if (toolMode === TOOL_MODE_ENUM.EDIT && isEditorHtml) return;
+    setLiveHtml(html);
+  }, [html, toolMode]);
 
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
@@ -91,6 +100,7 @@ const DeviceFrame = ({
         event.data.type === "FRAME_CONTENT_UPDATED" &&
         event.data.frameId === frameId
       ) {
+        editorHtmlRef.current = event.data.htmlContent;
         updateFrame(frameId, {
           htmlContent: event.data.htmlContent,
           isDirty: true,
