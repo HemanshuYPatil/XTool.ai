@@ -21,8 +21,6 @@ const BillingPage = async () => {
     amount: number;
     reason: string;
     modelTokens?: number;
-    promptTokens?: number;
-    completionTokens?: number;
     details?: { amount: number; reason: string; modelTokens?: number }[];
     createdAt: Date;
   }[] = [];

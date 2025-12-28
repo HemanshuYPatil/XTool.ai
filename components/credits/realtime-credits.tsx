@@ -1,6 +1,5 @@
 "use client";
 
-import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -32,10 +31,9 @@ export const useRealtimeCredits = ({
   initialCredits: number | null;
   isDeveloper: boolean;
 }) => {
-  const { user } = useKindeBrowserClient();
   const data = useQuery(
     api.realtime.getUserCredits,
-    user && !isDeveloper ? {} : "skip"
+    isDeveloper ? "skip" : {}
   );
   if (isDeveloper) return null;
   return typeof data?.credits === "number" ? data.credits : initialCredits;
@@ -60,10 +58,9 @@ export const RealtimeCreditTransactionsList = ({
   initialTransactions: CreditTransactionItem[];
   limit?: number;
 }) => {
-  const { user } = useKindeBrowserClient();
   const data = useQuery(
     api.realtime.getUserCreditTransactions,
-    user ? { limit } : "skip"
+    { limit }
   );
   const transactions =
     data && data.length

@@ -9,6 +9,7 @@ import CookieConsent from "@/components/cookie-consent";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { ensureUserFromKinde } from "@/lib/billing";
 import { ensureUserCredits, syncRealtimeCredits } from "@/lib/credits";
+import { DevConsoleBanner } from "@/components/dev-console-banner";
 
 const jostSans = Jost({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -44,6 +45,7 @@ export default async function RootLayout({
               disableTransitionOnChange
             >
               {children}
+              <DevConsoleBanner />
               <CookieConsent />
               <Toaster richColors position="bottom-center" />
             </ThemeProvider>

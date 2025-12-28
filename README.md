@@ -32,6 +32,32 @@ XTool.ai is a comprehensive AI-powered workspace designed to streamline applicat
 
 The application uses Kinde for secure authentication.
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kinde
+    participant NextJS as Next.js Middleware
+    participant Prisma as MongoDB (Prisma)
+    participant Convex
+
+    User->>Kinde: Click "Sign In"
+    Kinde->>User: Redirect to Login Page
+    User->>Kinde: Authenticate
+    Kinde->>NextJS: Callback (/api/auth/kinde_callback)
+    NextJS->>NextJS: Create Session
+    NextJS->>User: Redirect to App
+    
+    Note over User, Convex: On Page Load (layout.tsx)
+    User->>NextJS: Request Page
+    NextJS->>Prisma: ensureUserFromKinde()
+    Prisma-->>NextJS: User Record
+    NextJS->>Prisma: ensureUserCredits()
+    Prisma-->>NextJS: Credit Balance
+    NextJS->>Convex: syncRealtimeCredits()
+    Convex-->>NextJS: Acknowledge
+    NextJS->>User: Render Page with Data
+```
+
 1.  **Login/Register**: User clicks "Sign In" and is redirected to Kinde's hosted page.
 2.  **Callback**: Upon success, Kinde redirects back to `/api/auth/kinde_callback`.
 3.  **Session Creation**: Next.js middleware establishes a session.
@@ -44,6 +70,43 @@ The application uses Kinde for secure authentication.
 ### 2. Event-Driven Generation (Inngest)
 
 Heavy AI tasks are handled asynchronously using Inngest to prevent timeouts and ensure reliability.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as XDesign UI
+    participant API as Next.js API
+    participant Inngest
+    participant LLM as OpenRouter (AI)
+    participant Convex
+
+    User->>UI: Enter Prompt & Click Generate
+    UI->>API: POST /api/project
+    API->>Inngest: Send Event (app/project.create)
+    API-->>UI: Return Project ID
+    
+    loop Realtime Updates
+        UI->>Convex: Subscribe (getProject, getFrames)
+        Convex-->>UI: Stream Updates
+    end
+
+    Note right of Inngest: Background Job
+    Inngest->>LLM: Generate Project Structure
+    LLM-->>Inngest: JSON Structure
+    Inngest->>Convex: Update Status (analyzing)
+    
+    par Generate Screens
+        Inngest->>LLM: Generate HTML (Screen 1)
+        LLM-->>Inngest: HTML Code
+        Inngest->>Convex: Save Frame (Screen 1)
+        
+        Inngest->>LLM: Generate HTML (Screen 2)
+        LLM-->>Inngest: HTML Code
+        Inngest->>Convex: Save Frame (Screen 2)
+    end
+    
+    Inngest->>Convex: Update Status (completed)
+```
 
 **Flow: Generating a Project**
 1.  **Trigger**: User submits a prompt in `XDesign`.
@@ -60,6 +123,30 @@ Heavy AI tasks are handled asynchronously using Inngest to prevent timeouts and 
 ### 3. Realtime Data Sync (Convex)
 
 Convex is used as a realtime layer to keep the frontend updated instantly without polling.
+
+```mermaid
+graph TD
+    subgraph Frontend
+        UI[User Interface]
+    end
+    
+    subgraph Backend
+        ConvexDB[(Convex Database)]
+        PrismaDB[(MongoDB / Prisma)]
+    end
+    
+    subgraph "Server Actions"
+        Sync[syncRealtimeCredits]
+    end
+
+    UI -- Subscribe --> ConvexDB
+    ConvexDB -- Push Updates --> UI
+    
+    Sync -- Read --> PrismaDB
+    Sync -- Write --> ConvexDB
+    
+    note[Data flows from Prisma to Convex<br/>Convex pushes to UI]
+```
 
 *   **Projects & Frames**: The `XDesign` UI subscribes to `api.realtime.getProject` and `api.realtime.getFrames`. As Inngest generates content, the UI updates live.
 *   **Credits**: The credit balance in the header subscribes to `api.realtime.getUserCredits`. When a generation consumes credits, the backend updates Convex, and the user sees the deduction immediately.
