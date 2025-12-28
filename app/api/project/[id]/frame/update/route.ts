@@ -67,7 +67,7 @@ export async function PATCH(
       frame: updated,
     });
   } catch (error) {
-    console.log("Update frame error:", error);
+    console.error("Update frame error:", error);
     return NextResponse.json(
       { error: "Failed to update frame" },
       { status: 500 }

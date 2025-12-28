@@ -31,8 +31,6 @@ const CreditsHistoryPage = async () => {
       amount: tx.amount,
       reason: tx.reason,
       modelTokens: tx.modelTokens,
-      promptTokens: tx.promptTokens,
-      completionTokens: tx.completionTokens,
       details: tx.details,
       createdAt: tx.createdAt.getTime(),
     }));

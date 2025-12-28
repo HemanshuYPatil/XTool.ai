@@ -16,6 +16,7 @@ import {
   Wand2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRealtimeCredits } from "@/components/credits/realtime-credits";
  
 
 type CreatorDashboardProps = {
@@ -165,7 +166,11 @@ const CreatorDashboard = ({
   credits,
 }: CreatorDashboardProps) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const studioStats = buildStudioStats(credits ?? null, initialIsDeveloper);
+  const realtimeCredits = useRealtimeCredits({
+    initialCredits: credits ?? null,
+    isDeveloper: Boolean(initialIsDeveloper),
+  });
+  const studioStats = buildStudioStats(realtimeCredits ?? null, initialIsDeveloper);
 
   useLayoutEffect(() => {
     let ctx: { revert: () => void } | undefined;

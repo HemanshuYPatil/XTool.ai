@@ -1,177 +1,109 @@
-# XDesign Mobile Agent SaaS
+# XTool.ai - AI Workspace
 
-## 🚀 Overview
-**XDesign-Mobile-Agent-SaaS** is an advanced AI-powered platform designed to rapidly prototype mobile application user interfaces. It allows users to describe their app idea in natural language, and the system autonomously generates a complete, multi-screen mobile UI mockups using Tailwind CSS. The platform features an infinite canvas for interaction, real-time code generation, and developer-focused tools for export and customization.
+XTool.ai is a comprehensive AI-powered workspace designed to streamline application development and content creation. It integrates multiple AI tools into a single platform, leveraging event-driven architecture and realtime data syncing for a seamless user experience.
 
-## 🏗️ Architecture
+## Tech Stack
 
-The application is built on a modern serverless stack, leveraging **Next.js** for the frontend and API, **Inngest** for durable background workflows (crucial for long-running AI tasks), and **MongoDB** (via Prisma) for data persistence.
-
-```mermaid
-graph TD
-    User[User Client] -->|HTTP Request| Next[Next.js App Router]
-    Next -->|Auth| Kinde[Kinde Auth]
-    Next -->|Data| Prisma[Prisma ORM]
-    Prisma -->|Persist| Mongo[MongoDB]
-    
-    Next -->|Trigger Job| Inngest[Inngest Serverless Queue]
-    Inngest -->|Execute| Func[Generate Screens Function]
-    
-    Func -->|Plan UI| LLM1[LLM (Analyzer)]
-    Func -->|Generate Code| LLM2[LLM (Coder)]
-    
-    LLM1 & LLM2 -->|API| OpenRouter[OpenRouter / Gemini]
-    LLM2 -->|Search Images| Unsplash[Unsplash API]
-    
-    Func -->|Stream Updates| Socket[Real-time Events]
-    Socket -->|Update UI| User
-```
-
-## 🛠️ Technology Stack
-
-| Component | Technology | Purpose |
+| Category | Technology | Description |
 | :--- | :--- | :--- |
-| **Framework** | Next.js 14+ | Core application framework (App Router) |
-| **Language** | TypeScript | Type safety and code quality |
-| **Database** | MongoDB | NoSQL document storage for flexible schema |
-| **ORM** | Prisma | Database schema and type-safe queries |
-| **Styling** | Tailwind CSS | Utility-first CSS for generated UIs |
-| **Queue/Jobs** | Inngest | Orchestrating multi-step AI workflows |
-| **AI / LLM** | OpenRouter / Gemini | Core intelligence for UI planning and coding |
-| **Auth** | Kinde | Secure user authentication |
-| **Billing** | Polar.sh | Subscription and payment management |
-| **UI Library** | Radix UI / Shadcn | Accessible component primitives |
-| **Canvas** | React-Zoom-Pan-Pinch | Figma-like infinite canvas interaction |
+| **Framework** | Next.js 15 | App Router, Server Actions, React Server Components |
+| **Language** | TypeScript | Static typing for reliability |
+| **Styling** | Tailwind CSS | Utility-first CSS framework |
+| **UI Library** | Shadcn UI | Reusable components built on Radix UI |
+| **Auth** | Kinde Auth | Secure, passwordless authentication |
+| **Database** | Prisma (MongoDB) | ORM for user and transaction data |
+| **Realtime** | Convex | Realtime backend for project state and credits |
+| **Queue** | Inngest | Event-driven background job processing |
+| **AI Models** | OpenRouter | Access to various LLMs (Claude, GPT-4, etc.) |
 
-## 🧩 Core Features & Modules
+## Modules
 
-### 1. Intelligent AI Generation Pipeline
-The core value proposition is the multi-step AI generation process. It creates high-fidelity, context-aware screens.
-
-| Feature | Description |
-| :--- | :--- |
-| **Intent Analysis** | First, an "Architect" LLM analyzes the user prompt to plan the app structure, navigation flow, and screen purposes. |
-| **Contextual Generation** | Screens are generated sequentially. Screen N+1 is aware of Screen N's design to ensure visual consistency. |
-| **Self-Correction** | The system validates generated HTML. If it detects malformed code, it automatically triggers a regeneration attempt. |
-| **Visual Assets** | Automatically fetches relevant high-quality images from Unsplash to populate the designs. |
-
-### 2. The Canvas (Workspace)
-A highly interactive environment for viewing and managing generated designs.
-- **Infinite Zoom/Pan**: Navigate large projects easily.
-- **Device Frames**: Renders HTML in isolated iframes to prevent style conflicts.
-- **Skeleton Loading**: Visual feedback during the generation process.
-
-### 3. Developer Tools
-- **Code Export**: View and copy the raw HTML/Tailwind code.
-- **Image Export** *(Pro)*: Download high-resolution PNG screenshots of the designs.
-- **Regeneration**: Select specific screens to regenerate with new instructions.
-
-## 💾 Database Schema
-
-The data model centers around `Users` who own `Projects`, which contain multiple `Frames` (screens).
-
-```mermaid
-erDiagram
-    User ||--o{ Project : owns
-    User ||--o{ Subscription : has
-    User ||--o{ ShareLink : creates
-    
-    Project ||--o{ Frame : contains
-    Project ||--o{ ShareLink : has
-    
-    Frame ||--o{ ShareLink : "specific frame link"
-
-    User {
-        String id
-        String kindeId
-        String plan "FREE | PRO"
-    }
-    
-    Project {
-        String id
-        String name
-        String theme
-        Enum visibility
-    }
-    
-    Frame {
-        String id
-        String title
-        String htmlContent
-    }
-    
-    Subscription {
-        String status
-        String polarCustomerId
-    }
-```
-
-## 🤖 AI Workflow Logic
-
-The `generateScreens` function in `inngest/functions` is the brain of the operation.
-
-```mermaid
-flowchart TD
-    Start[User Prompt] --> Step1{Analyze & Plan}
-    Step1 -->|JSON Plan| Plan[Screen List: [Home, Profile, Settings...]]
-    
-    Plan --> Loop[Loop through Screens]
-    
-    Loop --> Context[Build Context]
-    Context -->|Add Previous Screens| Prompt
-    Context -->|Add Theme Variables| Prompt
-    
-    Prompt --> Gen[Generate HTML]
-    Gen --> Validate{Valid HTML?}
-    
-    Validate -->|No| Retry[Retry Generation]
-    Validate -->|Yes| Save[Save to DB]
-    
-    Save --> Next{More Screens?}
-    Next -->|Yes| Loop
-    Next -->|No| Finish[Complete]
-```
-
-## 💰 Monetization & Plans
-
-The app uses a freemium model managed by Polar.sh.
-
-| Feature | Free Plan | Pro Plan |
-| :--- | :---: | :---: |
-| **Screen Limit** | Max 2 screens per generation | Max 5 screens per generation |
-| **Themes** | Basic themes only | Access to all themes (e.g., Neo-Brutalism) |
-| **Styles** | Standard | "Pro" polished styling instructions |
-| **Export** | Code only | Code + PNG Image Export |
-| **History** | Standard | Full project history |
-
-## 📂 Project Structure
-
-```text
-/app
-  /api          # Next.js API Routes (Auth, Billing, Project management)
-  /(routes)     # Frontend pages (Dashboard, Canvas, Landing)
-  /action       # Server Actions for form submissions
-/components
-  /canvas       # The main workspace logic (Zoomable canvas, Device frames)
-  /ui           # Reusable UI components (Buttons, Dialogs)
-/inngest
-  /functions    # Background job definitions (The AI Logic)
-/lib
-  ai-models.ts  # Model configurations (Gemini, OpenRouter)
-  prompt.ts     # System prompts for the LLM
-  themes.ts     # CSS variable definitions for different visual themes
-/prisma         # Database schema
-```
-
-## 🧪 Key APIs
-
-| Method | Endpoint | Description |
+| Module | Route | Description |
 | :--- | :--- | :--- |
-| `POST` | `/api/project` | Creates a new project and triggers generation. |
-| `POST` | `/api/project/[id]/frame/regenerate` | Regenerates a specific frame with new constraints. |
-| `POST` | `/api/screenshot` | Generates a screenshot of the canvas (Pro feature). |
-| `GET` | `/api/auth/[kindeAuth]` | Handles Kinde authentication flows. |
-| `POST` | `/api/webhooks/polar` | Listens for subscription updates from Polar. |
+| **XDesign** | `/xdesign` | AI-powered mobile app UI generator. Generates multi-screen mockups from text prompts. |
+| **XCreator** | `/xcreator` | Content creation suite (details pending implementation). |
+| **Xcode CLI** | `/xcode-cli` | Integration with local development workflows via CLI. |
+| **Billing** | `/billing` | Credit management, transaction history, and top-ups. |
+| **Account** | `/account` | User profile and settings management. |
 
----
-*Research generated by Gemini CLI Agent.*
+## System Architecture
+
+### 1. Authentication Flow (Kinde)
+
+The application uses Kinde for secure authentication.
+
+1.  **Login/Register**: User clicks "Sign In" and is redirected to Kinde's hosted page.
+2.  **Callback**: Upon success, Kinde redirects back to `/api/auth/kinde_callback`.
+3.  **Session Creation**: Next.js middleware establishes a session.
+4.  **Data Sync (`app/layout.tsx`)**:
+    *   On every page load, the root layout checks the Kinde session.
+    *   `ensureUserFromKinde`: Syncs user profile to Prisma `User` table.
+    *   `ensureUserCredits`: Initializes or retrieves user credits.
+    *   `syncRealtimeCredits`: Pushes latest credit balance and transactions to Convex for realtime access.
+
+### 2. Event-Driven Generation (Inngest)
+
+Heavy AI tasks are handled asynchronously using Inngest to prevent timeouts and ensure reliability.
+
+**Flow: Generating a Project**
+1.  **Trigger**: User submits a prompt in `XDesign`.
+2.  **API Call**: `POST /api/project` is called.
+3.  **Event Sent**: The API sends an `app/project.create` event to Inngest.
+4.  **Function Execution** (`inngest/functions/generateScreens.ts`):
+    *   Inngest picks up the event.
+    *   **Step 1**: Calls LLM to generate project structure and screen descriptions.
+    *   **Step 2**: Updates Convex `realtimeProjects` status to `analyzing`.
+    *   **Step 3**: Generates HTML code for each screen in parallel.
+    *   **Step 4**: Updates Convex `realtimeFrames` with the generated code.
+    *   **Step 5**: Marks project as `completed`.
+
+### 3. Realtime Data Sync (Convex)
+
+Convex is used as a realtime layer to keep the frontend updated instantly without polling.
+
+*   **Projects & Frames**: The `XDesign` UI subscribes to `api.realtime.getProject` and `api.realtime.getFrames`. As Inngest generates content, the UI updates live.
+*   **Credits**: The credit balance in the header subscribes to `api.realtime.getUserCredits`. When a generation consumes credits, the backend updates Convex, and the user sees the deduction immediately.
+
+## Directory Structure
+
+```
+├── app/
+│   ├── (routes)/       # Application routes and pages
+│   ├── api/            # API routes (Auth, Inngest, Project)
+│   └── layout.tsx      # Root layout with global providers
+├── components/         # Reusable UI components
+├── convex/             # Convex backend logic
+│   ├── schema.ts       # Realtime database schema
+│   └── realtime.ts     # Queries and mutations
+├── inngest/            # Background job definitions
+│   └── functions/      # Workflow logic (generation, etc.)
+├── lib/                # Utility functions
+│   ├── credits.ts      # Credit calculation and sync logic
+│   └── prisma.ts       # Database client
+└── prisma/             # Database schema (MongoDB)
+```
+
+## Setup Instructions
+
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+
+2.  **Environment Variables**:
+    Create a `.env.local` file with keys for Kinde, Convex, Inngest, OpenRouter, and MongoDB.
+
+3.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
+
+4.  **Start Inngest Dev Server** (for background jobs):
+    ```bash
+    npx inngest-cli@latest dev
+    ```
+
+5.  **Start Convex**:
+    ```bash
+    npx convex dev
+    ```

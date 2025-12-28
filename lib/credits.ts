@@ -185,22 +185,18 @@ export const deductCredits = async ({
         return { ok: false, credits: existing?.credits ?? 0 };
       }
       const transaction = recordTransaction
-          ? await tx.creditTransaction.create({
+        ? await tx.creditTransaction.create({
             data: {
               userId: kindeId,
               amount: -amount,
               reason,
               modelTokens,
-              promptTokens,
-              completionTokens,
             },
             select: {
               id: true,
               amount: true,
               reason: true,
               modelTokens: true,
-              promptTokens: true,
-              completionTokens: true,
               createdAt: true,
             },
           })
@@ -220,8 +216,6 @@ export const deductCredits = async ({
           amount: result.transaction.amount,
           reason: result.transaction.reason,
           modelTokens: result.transaction.modelTokens ?? undefined,
-          promptTokens: result.transaction.promptTokens ?? undefined,
-          completionTokens: result.transaction.completionTokens ?? undefined,
           createdAt: result.transaction.createdAt.getTime(),
         });
       }
@@ -297,8 +291,6 @@ export const syncRealtimeCredits = async ({
         amount: tx.amount,
         reason: tx.reason,
         modelTokens: tx.modelTokens ?? undefined,
-        promptTokens: tx.promptTokens ?? undefined,
-        completionTokens: tx.completionTokens ?? undefined,
         details: Array.isArray(tx.details) ? tx.details : undefined,
         createdAt: tx.createdAt.getTime(),
       })
@@ -327,8 +319,6 @@ export const getCreditTransactionsForUser = async ({
       amount: true,
       reason: true,
       modelTokens: true,
-      promptTokens: true,
-      completionTokens: true,
       details: true,
       createdAt: true,
     },
@@ -364,8 +354,6 @@ export const recordCreditSummary = async ({
         amount,
         reason,
         modelTokens,
-        promptTokens,
-        completionTokens,
         details,
       },
       select: {
@@ -373,8 +361,6 @@ export const recordCreditSummary = async ({
         amount: true,
         reason: true,
         modelTokens: true,
-        promptTokens: true,
-        completionTokens: true,
         createdAt: true,
       },
     });
@@ -386,16 +372,12 @@ export const recordCreditSummary = async ({
         amount,
         reason,
         modelTokens,
-        promptTokens,
-        completionTokens,
       },
       select: {
         id: true,
         amount: true,
         reason: true,
         modelTokens: true,
-        promptTokens: true,
-        completionTokens: true,
         createdAt: true,
       },
     });
@@ -415,8 +397,6 @@ export const recordCreditSummary = async ({
       amount: transaction.amount,
       reason: transaction.reason,
       modelTokens: transaction.modelTokens ?? undefined,
-      promptTokens: transaction.promptTokens ?? undefined,
-      completionTokens: transaction.completionTokens ?? undefined,
       createdAt: transaction.createdAt.getTime(),
       details,
     });
@@ -428,8 +408,6 @@ export const recordCreditSummary = async ({
       amount: transaction.amount,
       reason: transaction.reason,
       modelTokens: transaction.modelTokens ?? undefined,
-      promptTokens: transaction.promptTokens ?? undefined,
-      completionTokens: transaction.completionTokens ?? undefined,
       createdAt: transaction.createdAt.getTime(),
     });
   }
