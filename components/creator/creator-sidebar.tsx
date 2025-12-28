@@ -54,7 +54,7 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
     <aside
       className={cn(
         "fixed left-0 top-0 z-40 h-screen border-r bg-card/50 backdrop-blur-xl transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-[80px]" : "w-[260px]"
+        isCollapsed ? "w-20" : "w-65"
       )}
     >
       <div className="flex h-full flex-col gap-4 p-4">

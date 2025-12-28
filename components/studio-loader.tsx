@@ -87,7 +87,7 @@ export const StudioLoader = ({ isDone }: { isDone?: boolean }) => {
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/80 backdrop-blur-3xl"
+      className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-background/80 backdrop-blur-3xl"
     >
       <div className="relative flex flex-col items-center max-w-md w-full px-6">
         {/* Modern Loader Animation */}
@@ -106,7 +106,7 @@ export const StudioLoader = ({ isDone }: { isDone?: boolean }) => {
           
           {/* Center Icon */}
           <div className="absolute inset-0 flex items-center justify-center">
-             <div className="h-20 w-20 rounded-[2.5rem] bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-2xl border border-white/10 backdrop-blur-md">
+             <div className="h-20 w-20 rounded-[2.5rem] bg-linear-to-br from-primary/20 to-accent/20 flex items-center justify-center shadow-2xl border border-white/10 backdrop-blur-md">
                 <Sparkles className="h-10 w-10 text-primary animate-pulse" />
              </div>
           </div>
@@ -114,7 +114,7 @@ export const StudioLoader = ({ isDone }: { isDone?: boolean }) => {
 
         <div className="text-center space-y-6 w-full">
           <div className="space-y-2">
-            <h1 className="text-5xl font-black tracking-tighter text-foreground bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/50">
+            <h1 className="text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-linear-to-b from-foreground to-foreground/50">
               {isDone ? "Studio Ready" : "Opening Studio"}
             </h1>
             <div className="h-8 flex items-center justify-center overflow-hidden">

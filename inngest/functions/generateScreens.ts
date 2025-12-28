@@ -12,7 +12,6 @@ import {
   BASE_VARIABLES,
   THEME_LIST,
   getThemesForPlan,
-  isThemeAllowedForPlan,
 } from "@/lib/themes";
 import { unsplashTool } from "../tool";
 import {
@@ -24,6 +23,17 @@ import {
 } from "@/lib/html-sanitize";
 import { openrouterAi } from "@/lib/openrouter-ai";
 import { OPENROUTER_MODEL_ID } from "@/lib/ai-models";
+import {
+  calculateTokenCost,
+  getUsageTokenCount,
+  recordCreditSummary,
+  deductCredits,
+} from "@/lib/credits";
+import {
+  publishFrame,
+  publishProjectStatus,
+  publishCreditSummaryUpdate,
+} from "@/lib/convex-client";
 
 const AnalysisSchema = z.object({
   theme: z
@@ -61,11 +71,14 @@ const AnalysisSchema = z.object({
 });
 
 const model = openrouterAi(OPENROUTER_MODEL_ID);
+type CreditFailure = { creditFailure: true; message: string };
+const isCreditFailure = (value: unknown): value is CreditFailure =>
+  Boolean((value as CreditFailure | undefined)?.creditFailure);
 
 export const generateScreens = inngest.createFunction(
   { id: "generate-ui-screens" },
   { event: "ui/generate.screens" },
-  async ({ event, step, publish }) => {
+  async ({ event, step }) => {
     const {
       userId,
       projectId,
@@ -73,31 +86,92 @@ export const generateScreens = inngest.createFunction(
 
       frames,
       theme: existingTheme,
-      plan,
       isDeveloper,
     } = event.data;
-    const CHANNEL = `user:${userId}`;
     const isExistingGeneration = Array.isArray(frames) && frames.length > 0;
+    const creditSummary = {
+      totalAmount: 0,
+      totalTokens: 0,
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      details: [] as { amount: number; reason: string; modelTokens?: number }[],
+    };
+    const recordCreditDetail = (detail: {
+      amount: number;
+      reason: string;
+      modelTokens?: number;
+      promptTokens?: number;
+      completionTokens?: number;
+    }) => {
+      if (isDeveloper) return;
+      if (!detail.amount) return;
+      creditSummary.totalAmount += detail.amount;
+      if (detail.modelTokens) creditSummary.totalTokens += detail.modelTokens;
+      if (detail.promptTokens) creditSummary.totalPromptTokens += detail.promptTokens;
+      if (detail.completionTokens)
+        creditSummary.totalCompletionTokens += detail.completionTokens;
+      creditSummary.details.push({
+        amount: detail.amount,
+        reason: detail.reason,
+        modelTokens: detail.modelTokens,
+      });
+    };
+    const summaryId = `generation:${projectId}:${Date.now()}`;
+    const summaryCreatedAt = Date.now();
+    let summaryPublished = false;
+    const publishCreditSummary = async () => {
+      if (summaryPublished || isDeveloper) return;
+      if (!creditSummary.totalAmount) return;
+      summaryPublished = true;
+      await recordCreditSummary({
+        kindeId: userId,
+        amount: creditSummary.totalAmount,
+        reason: "screens.generate",
+        modelTokens: creditSummary.totalTokens || undefined,
+        promptTokens: creditSummary.totalPromptTokens || undefined,
+        completionTokens: creditSummary.totalCompletionTokens || undefined,
+        details: creditSummary.details,
+        transactionId: summaryId,
+      });
+    };
+    const updateRealtimeSummary = async () => {
+      if (isDeveloper || !creditSummary.totalAmount) return;
+      await publishCreditSummaryUpdate({
+        userId,
+        transactionId: summaryId,
+        amount: creditSummary.totalAmount,
+        reason: "screens.generate",
+        modelTokens: creditSummary.totalTokens || undefined,
+        promptTokens: creditSummary.totalPromptTokens || undefined,
+        completionTokens: creditSummary.totalCompletionTokens || undefined,
+        createdAt: summaryCreatedAt,
+        details: creditSummary.details,
+      });
+    };
+    const failForCredits = async (message: string): Promise<CreditFailure> => {
+      await publishProjectStatus({
+        projectId,
+        userId,
+        status: "failed",
+        message,
+      });
+      return { creditFailure: true, message };
+    };
 
-    await publish({
-      channel: CHANNEL,
-      topic: "generation.start",
-      data: {
-        status: "running",
-        projectId: projectId,
-      },
+    await publishProjectStatus({
+      projectId,
+      userId,
+      status: "running",
     });
 
-    //Analyze or plan
-    const analysis = await step.run("analyze-and-plan-screens", async () => {
-      await publish({
-        channel: CHANNEL,
-        topic: "analysis.start",
-        data: {
+    try {
+      //Analyze or plan
+      const analysisResult = await step.run("analyze-and-plan-screens", async () => {
+        await publishProjectStatus({
+          projectId,
+          userId,
           status: "analyzing",
-          projectId: projectId,
-        },
-      });
+        });
 
       const contextHTML = isExistingGeneration
         ? frames
@@ -108,18 +182,10 @@ export const generateScreens = inngest.createFunction(
             .join("\n\n")
         : "";
 
-      const effectivePlan = isDeveloper ? "PRO" : plan;
-      const themeRestriction =
-        effectivePlan === "PRO"
-          ? ""
-          : `\nALLOWED THEME IDS: ${getThemesForPlan(effectivePlan)
-              .map((t) => t.id)
-              .join(", ")}`;
       const analysisPrompt = isExistingGeneration
         ? `
           USER REQUEST: ${prompt}
           SELECTED THEME: ${existingTheme}
-          ${themeRestriction}
 
           EXISTING SCREENS (analyze for consistency navigation, layout, design system etc):
           ${contextHTML}
@@ -133,10 +199,9 @@ export const generateScreens = inngest.createFunction(
         `.trim()
         : `
           USER REQUEST: ${prompt}
-          ${themeRestriction}
         `.trim();
 
-      const availableThemes = getThemesForPlan(effectivePlan);
+      const availableThemes = getThemesForPlan();
       const fallbackTheme =
         availableThemes[0]?.id ?? THEME_LIST[0]?.id ?? "midnight";
 
@@ -144,11 +209,32 @@ export const generateScreens = inngest.createFunction(
         theme: fallbackTheme,
         screens: [
           {
-            id: "main-screen",
-            name: "Main Screen",
-            purpose: "Primary screen for the requested experience.",
+            id: "home",
+            name: "Home",
+            purpose: "Primary landing screen for the requested experience.",
             visualDescription:
-              "Modern mobile UI with clear hierarchy, cards, and action buttons. Use the user request for content direction.",
+              "Clean, minimal dashboard with hero summary, key actions, and a primary content list tailored to the request.",
+          },
+          {
+            id: "detail",
+            name: "Detail",
+            purpose: "Focused detail view for a primary item or feature.",
+            visualDescription:
+              "Dedicated detail layout with prominent media, metadata stack, and contextual actions.",
+          },
+          {
+            id: "activity",
+            name: "Activity",
+            purpose: "Timeline or history of recent actions and updates.",
+            visualDescription:
+              "Feed-style layout with card rows, timestamps, and status chips.",
+          },
+          {
+            id: "profile",
+            name: "Profile",
+            purpose: "User profile and settings overview.",
+            visualDescription:
+              "Minimal profile header with avatar, stats, and settings cards.",
           },
         ],
       });
@@ -182,22 +268,16 @@ export const generateScreens = inngest.createFunction(
         }
       }
 
-      const maxScreens = effectivePlan === "PRO" ? 5 : 2;
-      const minScreens = effectivePlan === "PRO" ? 4 : 2;
-      const screens = isDeveloper
-        ? object.screens
-        : object.screens.length >= minScreens
+      const maxScreens = 5;
+      const minScreens = 4;
+      const screens = object.screens.length >= minScreens
         ? object.screens.slice(0, maxScreens)
         : [
             ...object.screens,
             ...object.screens.slice(0, minScreens - object.screens.length),
           ].slice(0, maxScreens);
       const rawTheme = isExistingGeneration ? existingTheme : object.theme;
-      const themeToUse = isDeveloper
-        ? rawTheme
-        : isThemeAllowedForPlan(rawTheme, effectivePlan)
-        ? rawTheme
-        : fallbackTheme;
+      const themeToUse = rawTheme ?? fallbackTheme;
 
       if (!isExistingGeneration) {
         await prisma.project.update({
@@ -209,27 +289,38 @@ export const generateScreens = inngest.createFunction(
         });
       }
 
-      await publish({
-        channel: CHANNEL,
-        topic: "analysis.complete",
-        data: {
-          status: "generating",
-          theme: themeToUse,
-          totalScreens: screens.length,
-          screens,
-          projectId: projectId,
-        },
+      await publishProjectStatus({
+        projectId,
+        userId,
+        status: "generating",
+        themeId: themeToUse,
+        totalScreens: screens.length,
       });
+      await Promise.all(
+        screens.map((screen, index) =>
+          publishFrame({
+            projectId,
+            userId,
+            frameId: screen.id,
+            title: screen.name,
+            htmlContent: "",
+            isLoading: true,
+            order: index,
+          })
+        )
+      );
 
       return { ...object, screens, themeToUse };
     });
+      if (isCreditFailure(analysisResult)) return;
+      const analysis = analysisResult;
 
     // Actuall generation of each screens
     const generatedFrames: typeof frames = isExistingGeneration
       ? [...frames]
       : [];
 
-    for (let i = 0; i < analysis.screens.length; i++) {
+      for (let i = 0; i < analysis.screens.length; i++) {
       const screenPlan = analysis.screens[i];
       const selectedTheme = THEME_LIST.find(
         (t) => t.id === analysis.themeToUse
@@ -247,11 +338,11 @@ export const generateScreens = inngest.createFunction(
         .map((f: FrameType) => `<!-- ${f.title} -->\n${f.htmlContent}`)
         .join("\n\n");
 
-      await step.run(`generated-screen-${i}`, async () => {
-        const proStyle =
-          plan === "PRO" ? `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n` : "";
-      const buildPrompt = (extraInstruction?: string) => `
+        const generationResult = await step.run(`generated-screen-${i}`, async () => {
+        const proStyle = `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n`;
+        const buildPrompt = (extraInstruction?: string) => `
           USER REQUEST: ${prompt}
+          INTERNAL BRIEF: Refine the user request into a clearer, more modern, minimal, and creative design direction before generating. Do not output the brief.
 
           - Screen ${i + 1}/${analysis.screens.length}
           - Screen ID: ${screenPlan.id}
@@ -311,7 +402,7 @@ export const generateScreens = inngest.createFunction(
               prompt: buildPrompt(extraInstruction),
               maxOutputTokens: 3000,
             });
-            return result.text ?? "";
+            return { text: result.text ?? "", usage: result.usage };
           } catch {
             const result = await generateText({
               model,
@@ -320,16 +411,43 @@ export const generateScreens = inngest.createFunction(
               prompt: buildPrompt(extraInstruction),
               maxOutputTokens: 3000,
             });
-            return result.text ?? "";
+            return { text: result.text ?? "", usage: result.usage };
           }
         };
 
-        let finalHtml = await runGeneration();
+        let final = await runGeneration();
+        if (isCreditFailure(final)) return final;
+        let finalHtml = final.text;
 
         if (!isLikelyHtml(finalHtml) || !isLikelyUiHtml(finalHtml)) {
-          finalHtml = await runGeneration(
+          final = await runGeneration(
             "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
           );
+          if (isCreditFailure(final)) return final;
+          finalHtml = final.text;
+        }
+
+        const totalTokens = getUsageTokenCount(final.usage);
+        const amount = calculateTokenCost(totalTokens);
+        if (amount > 0 && !isDeveloper) {
+          const charge = await deductCredits({
+            kindeId: userId,
+            amount,
+            reason: "screens.generate",
+            modelTokens: totalTokens,
+            publishRealtime: true,
+            recordTransaction: false,
+          });
+          if (!charge.ok) {
+            await publishCreditSummary();
+            return await failForCredits("Not enough credits to generate screens.");
+          }
+          recordCreditDetail({
+            amount: -amount,
+            reason: `screens.generate:${screenPlan.id}`,
+            modelTokens: totalTokens,
+          });
+          await updateRealtimeSummary();
         }
 
         const extracted = extractHtmlRoot(finalHtml) ?? finalHtml;
@@ -355,27 +473,29 @@ export const generateScreens = inngest.createFunction(
         // Add to generatedFrames for next iteration's context
         generatedFrames.push(frame);
 
-        await publish({
-          channel: CHANNEL,
-          topic: "frame.created",
-          data: {
-            frame: frame,
-            screenId: screenPlan.id,
-            projectId: projectId,
-          },
+        await publishFrame({
+          projectId,
+          userId,
+          frameId: frame.id,
+          title: frame.title,
+          htmlContent: frame.htmlContent,
+          isLoading: false,
+          order: i,
+          replaceFrameId: screenPlan.id,
         });
 
         return { success: true, frame: frame };
       });
-    }
+        if (isCreditFailure(generationResult)) return;
+      }
 
-    await publish({
-      channel: CHANNEL,
-      topic: "generation.complete",
-      data: {
+      await publishProjectStatus({
+        projectId,
+        userId,
         status: "completed",
-        projectId: projectId,
-      },
-    });
+      });
+    } finally {
+      await publishCreditSummary();
+    }
   }
 );

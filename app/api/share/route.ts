@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       permission: shareLink.permission,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       { error: "Failed to create share link." },
       { status: 500 }

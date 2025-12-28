@@ -1,6 +1,12 @@
 import prisma from "@/lib/prisma";
 
 export const isDeveloper = async (kindeId: string) => {
+  const bootstrapId = process.env.DEV_BOOTSTRAP_ID?.trim();
+  const targetId = kindeId?.trim();
+
+  if (bootstrapId && targetId && bootstrapId === targetId) {
+    return true;
+  }
   const developer = await prisma.developer.findUnique({
     where: { kindeId },
   });

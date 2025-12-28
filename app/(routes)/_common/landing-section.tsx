@@ -14,7 +14,6 @@ import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { Spinner } from "@/components/ui/spinner";
 import { ProjectType } from "@/types/project";
 import { useRouter } from "next/navigation";
-import { StudioLoader } from "@/components/studio-loader";
 import {
   FolderOpenDotIcon,
   MoreHorizontalIcon,
@@ -47,17 +46,19 @@ type LandingSectionProps = {
     picture?: string | null;
   };
   initialIsDeveloper?: boolean;
+  initialCredits?: number | null;
   showHeader?: boolean;
   mode?: "page" | "module";
-  plan?: string;
 };
+
+const PLACEHOLDER_PROJECT_NAME = "Q model";
 
 const LandingSection = ({
   initialUser,
   initialIsDeveloper,
+  initialCredits,
   showHeader = true,
   mode = "page",
-  plan,
 }: LandingSectionProps) => {
   const { user } = useKindeBrowserClient();
   const [promptText, setPromptText] = useState<string>("");
@@ -75,12 +76,12 @@ const LandingSection = ({
   const projectsRef = useRef<HTMLDivElement | null>(null);
   const userId = user?.id ?? initialUser?.id ?? undefined;
 
-  const { data: projects, isLoading, isError } = useGetProjects(userId);
+  const { data: projects, isLoading, isError, refetch } =
+    useGetProjects(userId);
   const { mutate, isPending } = useCreateProject();
   const deleteProjectMutation = useDeleteProject();
   const renameProjectMutation = useRenameProject();
   const developer = Boolean(initialIsDeveloper);
-  const isPro = plan === "PRO" || developer;
   useEffect(() => {
     if (!projects?.length) {
       setSelectedProjects([]);
@@ -92,6 +93,16 @@ const LandingSection = ({
       )
     );
   }, [projects]);
+
+  useEffect(() => {
+    if (!projects?.some((project: ProjectType) => project.name === PLACEHOLDER_PROJECT_NAME)) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      refetch();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [projects, refetch]);
 
   useEffect(() => {
     if (!modelDialogOpen || modelInfo) return;
@@ -108,13 +119,20 @@ const LandingSection = ({
       const { gsap } = await import("gsap");
       if (!active) return;
       ctx = gsap.context(() => {
-        gsap.from("[data-hero]", {
-          opacity: 0,
-          y: 20,
-          duration: 0.6,
-          ease: "power2.out",
-          stagger: 0.08,
-        });
+        gsap.fromTo(
+          "[data-hero]",
+          {
+            opacity: 0,
+            y: 20,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            ease: "power3.out",
+            stagger: 0.1,
+          }
+        );
       }, heroRef);
     })();
     return () => {
@@ -131,13 +149,20 @@ const LandingSection = ({
       const { gsap } = await import("gsap");
       if (!active) return;
       ctx = gsap.context(() => {
-        gsap.from(".project-card", {
-          opacity: 0,
-          y: 14,
-          duration: 0.45,
-          ease: "power2.out",
-          stagger: 0.05,
-        });
+        gsap.fromTo(
+          ".project-card",
+          {
+            opacity: 0,
+            y: 14,
+          },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.45,
+            ease: "power2.out",
+            stagger: 0.05,
+          }
+        );
       }, projectsRef);
     })();
     return () => {
@@ -244,25 +269,31 @@ const LandingSection = ({
         isModule && "rounded-3xl border bg-card/70 shadow-sm"
       )}
     >
-      {isPending && <StudioLoader />}
       <div className="flex flex-col">
-        {showHeader ? <Header initialUser={initialUser} /> : null}
+        {showHeader || isModule ? (
+          <Header
+            initialUser={initialUser}
+            initialCredits={initialCredits}
+            isDeveloper={Boolean(initialIsDeveloper)}
+          />
+        ) : null}
 
         <div
           className={cn(
             "relative overflow-hidden",
             isModule ? "pt-12 pb-6" : "pt-28"
           )}
+          ref={heroRef}
         >
           <div
             className="max-w-6xl mx-auto flex flex-col
          items-center justify-center gap-8
         "
           >
-            <div className="space-y-3" ref={heroRef}>
+            <div className="space-y-3">
               <h1
                 data-hero
-                className="text-center font-semibold text-4xl
+                className="opacity-0 text-center font-semibold text-4xl
             tracking-tight sm:text-5xl
             "
               >
@@ -270,7 +301,7 @@ const LandingSection = ({
                 <span className="text-primary">in minutes</span>
               </h1>
               <div className="mx-auto max-w-2xl " data-hero>
-                <p className="text-center font-medium text-foreground leading-relaxed sm:text-lg">
+                <p className="opacity-0 text-center font-medium text-foreground leading-relaxed sm:text-lg">
                   Go from idea to beautiful app mockups in minutes by chatting
                   with AI.
                 </p>
@@ -279,7 +310,7 @@ const LandingSection = ({
 
             <div
               data-hero
-              className="flex w-full max-w-3xl flex-col
+              className="opacity-0 flex w-full max-w-3xl flex-col
             item-center gap-8 relative z-50
             "
             >
@@ -301,48 +332,6 @@ const LandingSection = ({
                   >
                     Model details
                   </Button>
-                </div>
-              )}
-              {isPro && (
-                <div
-                  data-hero
-                  className="w-full rounded-2xl border border-primary/20 bg-[linear-gradient(140deg,rgba(14,165,233,0.16),rgba(99,102,241,0.12))] p-4 text-left shadow-sm"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-primary/80">
-                        Pro Studio Controls
-                      </p>
-                      <p className="mt-1 text-sm font-medium">
-                        Generate richer flows with premium layout intelligence.
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-full border border-primary/30 bg-background/70 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
-                        Pro
-                      </span>
-                      <span className="rounded-full border border-border/60 bg-background/70 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                        Advanced
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                    {[
-                      "Multi-screen flow",
-                      "Brand kit injection",
-                      "Responsive variants",
-                    ].map((label) => (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between rounded-xl border border-border/60 bg-background/80 px-3 py-2 text-xs font-semibold"
-                      >
-                        <span>{label}</span>
-                        <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600">
-                          On
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
@@ -369,7 +358,7 @@ const LandingSection = ({
             {!isModule && (
               <div
                 className="absolute -translate-x-1/2
-               left-1/2 w-[5000px] h-[3000px] top-[80%]
+               left-1/2 w-1250 h-750 top-[80%]
                -z-10"
               >
                 <div
@@ -453,6 +442,18 @@ const LandingSection = ({
                       </div>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      {isPending && (
+                        <ProjectCard
+                          loading
+                          project={{
+                            id: "loading",
+                            name: PLACEHOLDER_PROJECT_NAME,
+                            createdAt: new Date().toISOString(),
+                            theme: null,
+                            frames: [],
+                          } as ProjectType}
+                        />
+                      )}
                       {projects?.map((project: ProjectType) => (
                         <ProjectCard
                           key={project.id}
@@ -624,12 +625,14 @@ const ProjectCard = memo(
     onToggleSelect,
     onRequestDelete,
     onRequestRename,
+    loading,
   }: {
     project: ProjectType;
-    isSelected: boolean;
-    onToggleSelect: () => void;
-    onRequestDelete: () => void;
-    onRequestRename: () => void;
+    isSelected?: boolean;
+    onToggleSelect?: () => void;
+    onRequestDelete?: () => void;
+    onRequestRename?: () => void;
+    loading?: boolean;
   }) => {
     const router = useRouter();
     const createdAtDate = new Date(project.createdAt);
@@ -637,76 +640,96 @@ const ProjectCard = memo(
     const thumbnail = project.thumbnail || null;
 
     const onRoute = () => {
+      if (loading) return;
       router.push(`/project/${project.id}`);
     };
 
     return (
       <div
         role="button"
-        className="project-card w-full flex flex-col border rounded-xl cursor-pointer
-    hover:shadow-md overflow-hidden
-    "
+        className={cn(
+          "project-card w-full flex flex-col border rounded-xl overflow-hidden transition-all duration-300",
+          loading ? "cursor-not-allowed opacity-70 scale-[0.98]" : "cursor-pointer hover:shadow-md"
+        )}
         onClick={onRoute}
       >
         <div
-          className="h-40 bg-[#eee] relative overflow-hidden
-        flex items-center justify-center
-        "
+          className={cn(
+            "h-40 bg-muted relative overflow-hidden flex items-center justify-center",
+            loading && "animate-pulse"
+          )}
         >
-          <button
-            type="button"
-            className="absolute left-2 top-2 z-10 rounded-full border bg-background/90 px-2 py-1 text-xs font-medium"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleSelect();
-            }}
-          >
-            <span className="flex items-center gap-2">
-              <span
-                className={`h-3 w-3 rounded-full border ${
-                  isSelected ? "bg-primary border-primary" : "bg-transparent"
-                }`}
-              ></span>
-              {isSelected ? "Selected" : "Select"}
-            </span>
-          </button>
-          <div className="absolute right-2 top-2 z-10">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="h-8 w-8 rounded-full"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <MoreHorizontalIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRequestRename();
-                  }}
-                >
-                  <PencilIcon className="h-4 w-4" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onRequestDelete();
-                  }}
-                >
-                  <Trash2Icon className="h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          {thumbnail ? (
+          {!loading && (
+            <>
+              <button
+                type="button"
+                className="absolute left-2 top-2 z-10 rounded-full border bg-background/90 px-2 py-1 text-xs font-medium"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleSelect?.();
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`h-3 w-3 rounded-full border ${
+                      isSelected ? "bg-primary border-primary" : "bg-transparent"
+                    }`}
+                  ></span>
+                  {isSelected ? "Selected" : "Select"}
+                </span>
+              </button>
+              <div className="absolute right-2 top-2 z-10">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="h-8 w-8 rounded-full"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <MoreHorizontalIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRequestRename?.();
+                      }}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onRequestDelete?.();
+                      }}
+                    >
+                      <Trash2Icon className="h-4 w-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          )}
+
+          {loading ? (
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
+                <div className="relative h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <Spinner className="size-6 text-primary" />
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary animate-pulse">
+                Queueing...
+              </span>
+            </div>
+          ) : thumbnail ? (
             <img
               src={thumbnail}
               className="w-full h-full object-cover object-left

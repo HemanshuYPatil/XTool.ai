@@ -2,8 +2,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
-import { isDeveloper } from "@/lib/developers";
+import { ensureUserFromKinde } from "@/lib/billing";
 // Cache the Chromium executable path to avoid re-downloading
 let cachedExecutablePath: string | null = null;
 let downloadPromise: Promise<string> | null = null;
@@ -22,7 +21,7 @@ async function getChromiumPath(): Promise<string> {
       )
       .then((path) => {
         cachedExecutablePath = path;
-        console.log("Chromium path cached:", path);
+        void path;
         return path;
       })
       .catch((error) => {
@@ -46,15 +45,6 @@ export async function POST(req: Request) {
     if (!user) throw new Error("Unauthorized");
     const userId = user.id;
     await ensureUserFromKinde(user);
-    const dbUser = await getUserWithSubscription(userId);
-    const isDev = await isDeveloper(userId);
-    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
-    if (!projectId && !isDev && plan !== "PRO") {
-      return NextResponse.json(
-        { error: "Pro plan required to export images." },
-        { status: 403 }
-      );
-    }
 
     //Detect environment
     const isProduction = process.env.NODE_ENV === "production";
@@ -125,7 +115,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json(
       {
         error: "Failed to screenshot",

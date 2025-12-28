@@ -6,14 +6,14 @@ import Header from "./_common/header";
 import Canvas from "@/components/canvas";
 import { CanvasProvider, useCanvas } from "@/context/canvas-context";
 import { useEffect } from "react";
-import { StudioLoader } from "@/components/studio-loader";
 
 const Page = () => {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
 
-  const { data: project, isPending, isError, error } = useGetProjectById(id);
+  const { data: project, isPending, isError, error, refetch } =
+    useGetProjectById(id);
   // const frames = project?.frames || [];
   // const themeId = project?.theme || "";
 
@@ -27,6 +27,14 @@ const Page = () => {
       router.push("/api/auth/login");
     }
   }, [error, isError, router]);
+
+  useEffect(() => {
+    if (project?.name !== "Q model") return;
+    const timer = setTimeout(() => {
+      refetch();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [project?.name, refetch]);
 
   if (isError) {
     return (
@@ -54,7 +62,6 @@ const Page = () => {
         projectId={project?.id}
         visibility={project?.visibility}
         themeId={project?.theme}
-        plan={project?.plan}
       />
 
       <CanvasProvider
@@ -62,7 +69,6 @@ const Page = () => {
         initialThemeId={project?.theme}
         hasInitialData={hasInitialData}
         projectId={project?.id}
-        plan={project?.plan}
       >
         <ProjectContent project={project} isPending={isPending} />
       </CanvasProvider>
@@ -83,7 +89,6 @@ const ProjectContent = ({
 
   return (
     <>
-      {(showLoader || isDone) && <StudioLoader isDone={isDone} />}
       <div className="flex flex-1 overflow-hidden">
         <div className="relative flex-1">
           <Canvas

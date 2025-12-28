@@ -1,9 +1,11 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
-import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
+import { ensureUserFromKinde } from "@/lib/billing";
+import { syncRealtimeCredits } from "@/lib/credits";
 import { isDeveloper } from "@/lib/developers";
 import DeveloperTools from "@/components/developer-tools";
 import { CreatorLayout } from "@/components/creator/creator-layout";
+import { RealtimeCreditsValue } from "@/components/credits/realtime-credits";
 
 const AccountPage = async () => {
   const { getUser, getClaim } = getKindeServerSession();
@@ -14,8 +16,8 @@ const AccountPage = async () => {
   ]);
   if (user) {
     await ensureUserFromKinde(user);
+    await syncRealtimeCredits({ kindeId: user.id });
   }
-  const subscriptionData = user ? await getUserWithSubscription(user.id) : null;
   const developer = user ? await isDeveloper(user.id) : false;
   const projectCount = user
     ? await prisma.project.count({ where: { userId: user.id } })
@@ -32,17 +34,6 @@ const AccountPage = async () => {
     ? `${emailDomain.split(".")[0]} workspace`
     : "Personal workspace";
   
-  const planLabel = developer
-    ? "Developer"
-    : subscriptionData?.plan === "PRO"
-    ? "Xtreme"
-    : "Free";
-  const seatsLabel = subscriptionData?.subscription?.seats
-    ? `${subscriptionData.subscription.seats} seat${
-        subscriptionData.subscription.seats === 1 ? "" : "s"
-      }`
-    : "1 seat";
-
   return (
     <CreatorLayout user={user}>
       <div className="space-y-12 py-8">
@@ -101,17 +92,22 @@ const AccountPage = async () => {
 
           <div className="rounded-3xl border bg-primary/5 p-8 shadow-sm space-y-8">
             <div>
-              <h2 className="text-xl font-bold">Plan snapshot</h2>
+              <h2 className="text-xl font-bold">Credit snapshot</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Track your current usage at a glance.
+                Track your remaining AI credits.
               </p>
             </div>
             <div className="space-y-4">
               <div className="rounded-2xl border bg-background p-5 shadow-sm">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Active plan
+                  Credits remaining
                 </p>
-                <p className="mt-2 text-sm font-bold">{planLabel}</p>
+                <p className="mt-2 text-sm font-bold">
+                  <RealtimeCreditsValue
+                    initialCredits={null}
+                    isDeveloper={developer}
+                  />
+                </p>
               </div>
               <div className="rounded-2xl border bg-background p-5 shadow-sm">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -120,12 +116,6 @@ const AccountPage = async () => {
                 <p className="mt-2 text-sm font-bold">
                   {projectCount} total
                 </p>
-              </div>
-              <div className="rounded-2xl border bg-background p-5 shadow-sm">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Seats
-                </p>
-                <p className="mt-2 text-sm font-bold">{seatsLabel}</p>
               </div>
             </div>
           </div>

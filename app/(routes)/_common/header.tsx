@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CreditDisplay } from "@/components/credits/credit-display";
 
 type HeaderProps = {
   initialUser?: {
@@ -24,9 +25,15 @@ type HeaderProps = {
     family_name?: string | null;
     picture?: string | null;
   };
+  initialCredits?: number | null;
+  isDeveloper?: boolean;
 };
 
-const Header = ({ initialUser }: HeaderProps) => {
+const Header = ({
+  initialUser,
+  initialCredits,
+  isDeveloper,
+}: HeaderProps) => {
   const { theme, setTheme } = useTheme();
   const { user } = useKindeBrowserClient();
   const resolvedUser = user ?? initialUser;
@@ -55,16 +62,21 @@ const Header = ({ initialUser }: HeaderProps) => {
               href="/pricing"
               className="rounded-full px-3 py-1.5 text-foreground-muted text-sm transition-colors hover:bg-muted/70 hover:text-foreground"
             >
-              Pricing
+              Credits
             </Link>
           </div>
 
           <div
             className="flex flex-1 items-center
-           justify-end gap-3
-
-          "
+           justify-end gap-3"
           >
+            {resolvedUser && (
+              <CreditDisplay
+                initialUserId={resolvedUser.id ?? null}
+                initialCredits={initialCredits}
+                isDeveloper={isDeveloper}
+              />
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -122,7 +134,7 @@ const Header = ({ initialUser }: HeaderProps) => {
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <Link href="/billing" className="w-full text-sm">
-                      Billing
+                      Credits
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

@@ -105,7 +105,7 @@ const DeviceFrameToolbar = ({
       await navigator.clipboard.writeText(data.url);
       toast.success("Frame share link copied.");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Unable to create frame link.");
     } finally {
       setIsSharing(false);

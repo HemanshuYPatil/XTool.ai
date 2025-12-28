@@ -16,13 +16,27 @@ import {
 } from "@/lib/html-sanitize";
 import { openrouterAi } from "@/lib/openrouter-ai";
 import { OPENROUTER_MODEL_ID } from "@/lib/ai-models";
+import {
+  calculateTokenCost,
+  getUsageTokenCount,
+  recordCreditSummary,
+  deductCredits,
+} from "@/lib/credits";
+import {
+  publishFrame,
+  publishProjectStatus,
+  publishCreditSummaryUpdate,
+} from "@/lib/convex-client";
 
 const model = openrouterAi(OPENROUTER_MODEL_ID);
+type CreditFailure = { creditFailure: true; message: string };
+const isCreditFailure = (value: unknown): value is CreditFailure =>
+  Boolean((value as CreditFailure | undefined)?.creditFailure);
 
 export const regenerateFrame = inngest.createFunction(
   { id: "regenerate-frame" },
   { event: "ui/regenerate.frame" },
-  async ({ event, step, publish }) => {
+  async ({ event, step }) => {
     const {
       userId,
       projectId,
@@ -30,22 +44,87 @@ export const regenerateFrame = inngest.createFunction(
       prompt,
       theme: themeId,
       frame,
-      plan,
+      isDeveloper,
     } = event.data;
-    const CHANNEL = `user:${userId}`;
+    const creditSummary = {
+      totalAmount: 0,
+      totalTokens: 0,
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      details: [] as { amount: number; reason: string; modelTokens?: number }[],
+    };
+    const recordCreditDetail = (detail: {
+      amount: number;
+      reason: string;
+      modelTokens?: number;
+      promptTokens?: number;
+      completionTokens?: number;
+    }) => {
+      if (isDeveloper) return;
+      if (!detail.amount) return;
+      creditSummary.totalAmount += detail.amount;
+      if (detail.modelTokens) creditSummary.totalTokens += detail.modelTokens;
+      if (detail.promptTokens) creditSummary.totalPromptTokens += detail.promptTokens;
+      if (detail.completionTokens)
+        creditSummary.totalCompletionTokens += detail.completionTokens;
+      creditSummary.details.push({
+        amount: detail.amount,
+        reason: detail.reason,
+        modelTokens: detail.modelTokens,
+      });
+    };
+    const summaryId = `regeneration:${frameId}:${Date.now()}`;
+    const summaryCreatedAt = Date.now();
+    let summaryPublished = false;
+    const publishCreditSummary = async () => {
+      if (summaryPublished || isDeveloper) return;
+      if (!creditSummary.totalAmount) return;
+      summaryPublished = true;
+      await recordCreditSummary({
+        kindeId: userId,
+        amount: creditSummary.totalAmount,
+        reason: "frame.regenerate",
+        modelTokens: creditSummary.totalTokens || undefined,
+        promptTokens: creditSummary.totalPromptTokens || undefined,
+        completionTokens: creditSummary.totalCompletionTokens || undefined,
+        details: creditSummary.details,
+        transactionId: summaryId,
+      });
+    };
+    const updateRealtimeSummary = async () => {
+      if (isDeveloper || !creditSummary.totalAmount) return;
+      await publishCreditSummaryUpdate({
+        userId,
+        transactionId: summaryId,
+        amount: creditSummary.totalAmount,
+        reason: "frame.regenerate",
+        modelTokens: creditSummary.totalTokens || undefined,
+        promptTokens: creditSummary.totalPromptTokens || undefined,
+        completionTokens: creditSummary.totalCompletionTokens || undefined,
+        createdAt: summaryCreatedAt,
+        details: creditSummary.details,
+      });
+    };
+    const failForCredits = async (message: string): Promise<CreditFailure> => {
+      await publishProjectStatus({
+        projectId,
+        userId,
+        status: "failed",
+        message,
+      });
+      return { creditFailure: true, message };
+    };
 
-    await publish({
-      channel: CHANNEL,
-      topic: "generation.start",
-      data: {
-        status: "generating",
-        projectId: projectId,
-      },
+    await publishProjectStatus({
+      projectId,
+      userId,
+      status: "generating",
     });
 
-    // Generate new frame with the user's prompt
-    await step.run("regenerate-screen", async () => {
-      const selectedTheme = THEME_LIST.find((t) => t.id === themeId);
+    try {
+      // Generate new frame with the user's prompt
+      const regenerationResult = await step.run("regenerate-screen", async () => {
+        const selectedTheme = THEME_LIST.find((t) => t.id === themeId);
 
       //Combine the Theme Styles + Base Variable
       const fullThemeCSS = `
@@ -53,10 +132,10 @@ export const regenerateFrame = inngest.createFunction(
         ${selectedTheme?.style || ""}
       `;
 
-      const proStyle =
-        plan === "PRO" ? `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n` : "";
+      const proStyle = `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n`;
       const buildPrompt = (extraInstruction?: string) => `
         USER REQUEST: ${prompt}
+        INTERNAL BRIEF: Refine the user request into a clearer, more modern, minimal, and creative design direction before generating. Do not output the brief.
         ${proStyle}
 
         ORIGINAL SCREEN TITLE: ${frame.title}
@@ -108,7 +187,7 @@ export const regenerateFrame = inngest.createFunction(
             prompt: buildPrompt(extraInstruction),
             maxOutputTokens: 3000,
           });
-          return result.text ?? "";
+          return { text: result.text ?? "", usage: result.usage };
         } catch {
           const result = await generateText({
             model,
@@ -117,16 +196,43 @@ export const regenerateFrame = inngest.createFunction(
             prompt: buildPrompt(extraInstruction),
             maxOutputTokens: 3000,
           });
-          return result.text ?? "";
+          return { text: result.text ?? "", usage: result.usage };
         }
       };
 
-      let finalHtml = await runGeneration();
+      let final = await runGeneration();
+      if (isCreditFailure(final)) return final;
+      let finalHtml = final.text;
 
       if (!isLikelyHtml(finalHtml) || !isLikelyUiHtml(finalHtml)) {
-        finalHtml = await runGeneration(
+        final = await runGeneration(
           "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
         );
+        if (isCreditFailure(final)) return final;
+        finalHtml = final.text;
+      }
+
+      const totalTokens = getUsageTokenCount(final.usage);
+      const amount = calculateTokenCost(totalTokens);
+      if (amount > 0 && !isDeveloper) {
+        const charge = await deductCredits({
+          kindeId: userId,
+          amount,
+          reason: "frame.regenerate",
+          modelTokens: totalTokens,
+          publishRealtime: true,
+          recordTransaction: false,
+        });
+        if (!charge.ok) {
+          await publishCreditSummary();
+          return await failForCredits("Not enough credits to regenerate frame.");
+        }
+        recordCreditDetail({
+          amount: -amount,
+          reason: `frame.regenerate:${frameId}`,
+          modelTokens: totalTokens,
+        });
+        await updateRealtimeSummary();
       }
 
       const extracted = extractHtmlRoot(finalHtml) ?? finalHtml;
@@ -148,26 +254,26 @@ export const regenerateFrame = inngest.createFunction(
         },
       });
 
-      await publish({
-        channel: CHANNEL,
-        topic: "frame.created",
-        data: {
-          frame: updatedFrame,
-          screenId: frameId,
-          projectId: projectId,
-        },
+      await publishFrame({
+        projectId,
+        userId,
+        frameId: updatedFrame.id,
+        title: updatedFrame.title,
+        htmlContent: updatedFrame.htmlContent,
+        isLoading: false,
       });
 
-      return { success: true, frame: updatedFrame };
-    });
+        return { success: true, frame: updatedFrame };
+      });
+      if (isCreditFailure(regenerationResult)) return;
 
-    await publish({
-      channel: CHANNEL,
-      topic: "generation.complete",
-      data: {
+      await publishProjectStatus({
+        projectId,
+        userId,
         status: "completed",
-        projectId: projectId,
-      },
-    });
+      });
+    } finally {
+      await publishCreditSummary();
+    }
   }
 );

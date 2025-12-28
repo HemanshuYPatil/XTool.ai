@@ -1,27 +1,29 @@
 "use server";
 import { OPENROUTER_PROJECT_NAME_MODEL_ID } from "@/lib/ai-models";
 
-const toTwoWordTitle = (input: string) => {
-  const cleaned = input
-    .replace(/[`"'’“”]/g, "")
+const toShortName = (input: string) => {
+  const lettersOnly = input.replace(/[^a-zA-Z]/g, "").toUpperCase();
+  if (lettersOnly.length >= 3) {
+    return lettersOnly.slice(0, 4);
+  }
+  const words = input
     .replace(/[^a-zA-Z0-9\s-]/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
-  if (!cleaned) {
-    return "New Project";
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  const initials = words.map((word) => word[0] ?? "").join("").toUpperCase();
+  const merged = `${initials}${lettersOnly}`.replace(/[^A-Z]/g, "");
+  if (merged.length >= 3) {
+    return merged.slice(0, 4);
   }
-  const words = cleaned.split(" ").filter(Boolean);
-  const picked = words.slice(0, 2).map((word) => {
-    const [first, ...rest] = word;
-    return `${first?.toUpperCase() ?? ""}${rest.join("").toLowerCase()}`;
-  });
-  return picked.join(" ");
+  return "QMOD";
 };
 
 export async function generateProjectName(prompt: string) {
   try {
-    if (!process.env.OPENROUTER_API_KEY) {
-      return toTwoWordTitle(prompt);
+    if (!process.env.OPENROUTER_NAME_API_KEY) {
+      return toShortName(prompt);
     }
 
     const response = await fetch(
@@ -30,7 +32,7 @@ export async function generateProjectName(prompt: string) {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          authorization: `Bearer ${process.env.OPENROUTER_NAME_API_KEY}`,
           "http-referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost",
           "x-title": "XTool.ai",
         },
@@ -40,23 +42,22 @@ export async function generateProjectName(prompt: string) {
             {
               role: "system",
               content: [
-                "You generate a short two-word project name based on the user's prompt.",
-                "- Return exactly two words.",
-                "- Capitalize words appropriately.",
-                "- Do not include special characters.",
-                "- Return only the name, no quotes.",
+                "Generate a 3-4 letter project code based on the user's prompt.",
+                "- Return only 3-4 uppercase letters (A-Z).",
+                "- No spaces, digits, punctuation, or words.",
+                "- Return only the code, no quotes.",
               ].join("\n"),
             },
             { role: "user", content: prompt },
           ],
-          max_tokens: 12,
+          max_tokens: 8,
           temperature: 0.2,
         }),
       }
     );
 
     if (!response.ok) {
-      return toTwoWordTitle(prompt);
+      return toShortName(prompt);
     }
 
     const data = await response.json();
@@ -66,9 +67,9 @@ export async function generateProjectName(prompt: string) {
       ""
     ).trim();
 
-    return text ? toTwoWordTitle(text) : toTwoWordTitle(prompt);
+    return text ? toShortName(text) : toShortName(prompt);
   } catch (error) {
-    console.log(error);
-    return toTwoWordTitle(prompt);
+    console.error(error);
+    return toShortName(prompt);
   }
 }

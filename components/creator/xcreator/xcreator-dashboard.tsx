@@ -66,7 +66,7 @@ export function XCreatorDashboard() {
               Last 7 Days <ArrowUpRightIcon className="ml-2 size-4" />
             </Button>
           </div>
-          <div className="relative h-[350px] rounded-3xl border bg-card/40 p-8 overflow-hidden shadow-sm">
+          <div className="relative h-87.5 rounded-3xl border bg-card/40 p-8 overflow-hidden shadow-sm">
             <div className="absolute inset-0 flex items-end justify-between px-8 pb-8">
               {[60, 45, 75, 50, 90, 65, 85].map((h, i) => (
                 <div key={i} className="group relative flex flex-col items-center gap-2 w-full max-w-10">

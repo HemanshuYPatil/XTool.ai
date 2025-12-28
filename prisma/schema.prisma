@@ -15,11 +15,6 @@ datasource db {
 
 }
 
-enum Plan {
-  FREE
-  PRO
-}
-
 enum ProjectVisibility {
   PRIVATE
   PUBLIC
@@ -41,36 +36,28 @@ model User {
   kindeId         String        @unique
   email           String?
   name            String?
-  plan            Plan          @default(FREE)
-  polarCustomerId String?
-  subscription    Subscription?
+  credits         Int           @default(200)
   projects        Project[]
   shareLinks      ShareLink[]
   contributions   Contribution[]
   cliTokens     CliToken[]
+  creditTransactions CreditTransaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Subscription {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [kindeId])
-  polarSubscriptionId String @unique
-  polarCustomerId   String
-  status            String
-  currentPeriodStart DateTime?
-  currentPeriodEnd  DateTime?
-  cancelAtPeriodEnd Boolean  @default(false)
-  priceId           String?
-  productId         String?
-  seats             Int?
-  amount            Int?
-  currency          String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model CreditTransaction {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String
+  user       User     @relation(fields: [userId], references: [kindeId])
+  amount     Int
+  reason     String
+  modelTokens Int?
+  promptTokens Int?
+  completionTokens Int?
+  details    Json?
+  createdAt  DateTime @default(now())
 }
 
 model Developer {

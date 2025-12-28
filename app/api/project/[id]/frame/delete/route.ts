@@ -1,6 +1,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { publishFrameDeletion } from "@/lib/convex-client";
 
 export async function DELETE(
   request: Request,
@@ -38,6 +39,12 @@ export async function DELETE(
     if (!frame) {
       return NextResponse.json({ error: "Frame not found" }, { status: 404 });
     }
+
+    await publishFrameDeletion({
+      projectId,
+      userId: user.id,
+      frameId: frame.id,
+    });
 
     return NextResponse.json({
       success: true,

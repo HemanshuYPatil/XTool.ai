@@ -1,9 +1,9 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { generateProjectName } from "@/app/action/action";
 import { inngest } from "@/inngest/client";
-import { ensureUserFromKinde, getUserWithSubscription } from "@/lib/billing";
+import { ensureUserFromKinde } from "@/lib/billing";
+import { ensureUserCredits } from "@/lib/credits";
 import { isDeveloper } from "@/lib/developers";
 
 export async function GET() {
@@ -29,7 +29,7 @@ export async function GET() {
       data: projects,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       {
         error: "Failed to fetch projects",
@@ -52,23 +52,10 @@ export async function POST(request: Request) {
 
     const userId = user.id;
     await ensureUserFromKinde(user);
-    const dbUser = await getUserWithSubscription(userId);
+    await ensureUserCredits(userId);
     const isDev = await isDeveloper(userId);
-    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
-    if (!isDev && plan === "FREE") {
-      const projectCount = await prisma.project.count({
-        where: { userId },
-      });
-      if (projectCount >= 1) {
-        return NextResponse.json(
-          { error: "Free plan allows only one active project." },
-          { status: 403 }
-        );
-      }
-    }
 
-    const projectName = await generateProjectName(prompt);
-
+    const projectName = "Q model";
     const project = await prisma.project.create({
       data: {
         userId,
@@ -76,6 +63,19 @@ export async function POST(request: Request) {
         deletedAt: null,
       },
     });
+
+    try {
+      await inngest.send({
+        name: "project/name.generate",
+        data: {
+          userId,
+          projectId: project.id,
+          prompt,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    }
 
     //Trigger the Inngest
     try {
@@ -85,12 +85,11 @@ export async function POST(request: Request) {
           userId,
           projectId: project.id,
           prompt,
-          plan,
           isDeveloper: isDev,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
 
     return NextResponse.json({
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
       data: project,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       {
         error: "Failed to create project",

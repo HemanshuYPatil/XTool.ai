@@ -157,7 +157,7 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed right-4 top-20 z-[60] p-3 bg-background/80 backdrop-blur-xl border border-primary/20 rounded-full shadow-xl hover:bg-primary/10 transition-all group"
+        className="fixed right-4 top-20 z-60 p-3 bg-background/80 backdrop-blur-xl border border-primary/20 rounded-full shadow-xl hover:bg-primary/10 transition-all group"
       >
         <Settings2 className="size-5 text-primary group-hover:rotate-90 transition-transform duration-300" />
       </button>
@@ -167,7 +167,7 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
   return (
     <>
       <Script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js" strategy="afterInteractive" />
-      <div className="fixed right-0 top-0 h-screen w-80 bg-background/80 backdrop-blur-xl border-l border-border/40 shadow-2xl z-[60] flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="fixed right-0 top-0 h-screen w-80 bg-background/80 backdrop-blur-xl border-l border-border/40 shadow-2xl z-60 flex flex-col animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="p-4 border-b border-border/40 flex items-center justify-between bg-muted/10">
           <div className="flex items-center gap-3">
@@ -619,6 +619,7 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
                                   placeholder="mdi:home"
                                 />
                                 <div className="size-9 bg-muted/30 rounded-lg flex items-center justify-center border border-border/40 shadow-inner">
+                                  {/* @ts-ignore */}
                                   <iconify-icon icon={safeAttributes.icon} width="18"></iconify-icon>
                                 </div>
                               </div>

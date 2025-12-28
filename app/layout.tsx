@@ -4,9 +4,11 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/context/query-provider";
+import { ConvexProvider } from "@/context/convex-provider";
 import CookieConsent from "@/components/cookie-consent";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { ensureUserFromKinde } from "@/lib/billing";
+import { ensureUserCredits, syncRealtimeCredits } from "@/lib/credits";
 
 const jostSans = Jost({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -27,22 +29,26 @@ export default async function RootLayout({
 
   if (user) {
     await ensureUserFromKinde(user);
+    await ensureUserCredits(user.id);
+    await syncRealtimeCredits({ kindeId: user.id });
   }
   return (
     <html lang="en">
       <body className={`${jostSans.className} antialiased`}>
-        <QueryProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            {children}
-            <CookieConsent />
-            <Toaster richColors position="bottom-center" />
-          </ThemeProvider>
-        </QueryProvider>
+        <ConvexProvider>
+          <QueryProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              {children}
+              <CookieConsent />
+              <Toaster richColors position="bottom-center" />
+            </ThemeProvider>
+          </QueryProvider>
+        </ConvexProvider>
       </body>
     </html>
   );

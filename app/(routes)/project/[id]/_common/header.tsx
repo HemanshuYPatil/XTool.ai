@@ -43,24 +43,22 @@ import {
 } from "@/components/ui/dialog";
 import { getHTMLWrapper } from "@/lib/frame-wrapper";
 import { THEME_LIST } from "@/lib/themes";
+import { CreditDisplay } from "@/components/credits/credit-display";
 
 const Header = ({
   projectName,
   projectId,
   visibility = "PRIVATE",
   themeId,
-  plan,
 }: {
   projectName?: string;
   projectId?: string;
   visibility?: "PRIVATE" | "PUBLIC";
   themeId?: string | null;
-  plan?: string;
 }) => {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const isDark = theme === "dark";
-  const isPro = plan === "PRO";
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerSection, setDrawerSection] = useState<
     "publish" | "export" | "engagement"
@@ -124,7 +122,7 @@ const Header = ({
         `Project is now ${nextVisibility === "PUBLIC" ? "public" : "private"}.`
       );
     } catch (error) {
-      console.log(error);
+      console.error(error);
       setCurrentVisibility(visibility);
       toast.error("Unable to update visibility.");
     } finally {
@@ -153,7 +151,7 @@ const Header = ({
       await navigator.clipboard.writeText(data.url);
       toast.success("Share link copied to clipboard.");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Unable to generate share link.");
     } finally {
       setIsSharing(false);
@@ -167,7 +165,7 @@ const Header = ({
       await navigator.clipboard.writeText(shareLink);
       toast.success("Share link copied to clipboard.");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Unable to copy share link.");
     } finally {
       setIsCopying(false);
@@ -185,7 +183,7 @@ const Header = ({
       const data = await response.json();
       setContributions(data?.data ?? []);
     } catch (error) {
-      console.log(error);
+      console.error(error);
     } finally {
       setIsLoadingContributions(false);
     }
@@ -225,7 +223,7 @@ const Header = ({
       setAcceptMode(null);
       await fetchContributions();
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(
         (error as Error)?.message ?? "Unable to process contribution."
       );
@@ -238,13 +236,9 @@ const Header = ({
     <div className="sticky top-0 z-30">
       <header
         className={cn(
-          "relative border-b border-border/40 bg-card/50 backdrop-blur-sm",
-          isPro && "bg-[linear-gradient(120deg,rgba(14,165,233,0.12),rgba(99,102,241,0.08))]"
+          "relative border-b border-border/40 bg-card/50 backdrop-blur-sm"
         )}
       >
-        {isPro && (
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),_transparent_60%)]" />
-        )}
         <div
           className="flex items-center justify-between px-4
           py-2
@@ -260,28 +254,13 @@ const Header = ({
             >
               <ArrowLeftIcon className="size-4" />
             </Button>
-            <p className="max-w-[200px] truncate font-medium">
+            <p className="max-w-50 truncate font-medium">
               {projectTitle}
             </p>
-            {isPro && (
-              <span className="rounded-full border border-primary/30 bg-background/70 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-primary">
-                Pro Studio
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
-            {isPro && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-full border-primary/20 bg-background/70 text-xs font-semibold text-primary hover:bg-background"
-                onClick={() => openDrawer("export")}
-              >
-                <LayersIcon className="mr-1.5 size-3.5" />
-                Pro Export
-              </Button>
-            )}
+            <CreditDisplay />
             <Button
               variant="outline"
               size="icon"
@@ -600,7 +579,7 @@ const Header = ({
                       <LayersIcon className="size-6 text-muted-foreground/40" />
                     </div>
                     <h4 className="text-sm font-bold text-muted-foreground">More Formats</h4>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1 max-w-[200px]">
+                    <p className="text-[11px] text-muted-foreground/60 mt-1 max-w-50">
                       We're working on Vue, Svelte, and Figma export support.
                     </p>
                   </div>
@@ -771,7 +750,7 @@ const Header = ({
                           frame.frameId ?? frame.id
                         )}
                         sandbox="allow-scripts allow-same-origin"
-                        className="h-[360px] w-full"
+                        className="h-90 w-full"
                       />
                     </div>
                   </div>
@@ -789,7 +768,7 @@ const Header = ({
                           frame.id
                         )}
                         sandbox="allow-scripts allow-same-origin"
-                        className="h-[360px] w-full"
+                        className="h-90 w-full"
                       />
                     </div>
                   </div>

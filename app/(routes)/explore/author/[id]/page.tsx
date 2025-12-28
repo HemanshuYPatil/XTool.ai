@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import Logo from "@/components/logo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeftIcon } from "lucide-react";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { CreditDisplay } from "@/components/credits/credit-display";
 
 const AuthorProfilePage = async ({
   params,
@@ -11,6 +13,10 @@ const AuthorProfilePage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const { id } = await params;
+  const session = await getKindeServerSession();
+  const user = await session.getUser();
+  const isAuthenticated = Boolean(user);
+
   const author = await prisma.user.findUnique({
     where: { kindeId: id },
   });
@@ -42,13 +48,16 @@ const AuthorProfilePage = async ({
       <header className="border-b border-border/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo />
-          <Link
-            href="/explore"
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground shadow-sm transition hover:bg-muted/60"
-          >
-            <ArrowLeftIcon className="size-4" />
-            Back to Explore
-          </Link>
+          <div className="flex items-center gap-3">
+            {isAuthenticated && <CreditDisplay />}
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground shadow-sm transition hover:bg-muted/60"
+            >
+              <ArrowLeftIcon className="size-4" />
+              Back to Explore
+            </Link>
+          </div>
         </div>
       </header>
 

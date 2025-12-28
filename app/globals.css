@@ -177,6 +177,22 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+
+  @keyframes breathing-glow {
+    0%, 100% { opacity: 0.2; transform: scale(1.2); }
+    50% { opacity: 0.5; transform: scale(1.6); }
+  }
+  @keyframes border-pulse {
+    0%, 100% { border-color: var(--border); }
+    50% { border-color: rgba(245, 158, 11, 0.4); }
+  }
+  @keyframes floating {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-2px); }
+  }
+  --animate-breathing-glow: breathing-glow 4s ease-in-out infinite;
+  --animate-border-pulse: border-pulse 6s ease-in-out infinite;
+  --animate-floating: floating 3s ease-in-out infinite;
 }
 
 @layer base {

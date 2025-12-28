@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CreatorSidebar } from "./creator-sidebar";
-import { SearchIcon, BellIcon, UserIcon, PlusIcon, CheckIcon, InfoIcon, AlertCircleIcon } from "lucide-react";
+import { SearchIcon, UserIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,29 +13,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { CreditDisplay } from "@/components/credits/credit-display";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type CreatorLayoutProps = {
   children: React.ReactNode;
   user?: any;
+  credits?: number | null;
+  isDeveloper?: boolean;
 };
 
-const notifications = [
-  { id: 1, title: "Video Processed", description: "Your AI clip 'Future of AI' is ready.", time: "2h ago", icon: CheckIcon, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { id: 2, title: "New Feature", description: "AI Image Clipping is now live!", time: "5h ago", icon: InfoIcon, color: "text-blue-500", bg: "bg-blue-500/10" },
-  { id: 3, title: "Storage Alert", description: "You are using 85% of your storage.", time: "1d ago", icon: AlertCircleIcon, color: "text-amber-500", bg: "bg-amber-500/10" },
-];
-
-export function CreatorLayout({ children, user }: CreatorLayoutProps) {
+export function CreatorLayout({
+  children,
+  user,
+  credits,
+  isDeveloper,
+}: CreatorLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   
@@ -52,7 +50,7 @@ export function CreatorLayout({ children, user }: CreatorLayoutProps) {
       return "XCreator";
     }
     if (pathname === "/account") return "Account";
-    if (pathname === "/billing") return "Billing";
+    if (pathname === "/billing") return "Credits";
     if (pathname === "/account/settings") return "Settings";
     return "Dashboard";
   }, [pathname]);
@@ -65,7 +63,7 @@ export function CreatorLayout({ children, user }: CreatorLayoutProps) {
       <main 
         className={cn(
           "flex-1 transition-all duration-300 ease-in-out",
-          isCollapsed ? "ml-20" : "ml-[260px]"
+          isCollapsed ? "ml-20" : "ml-65"
         )}
       >
         {/* Top Header */}
@@ -88,38 +86,12 @@ export function CreatorLayout({ children, user }: CreatorLayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full relative">
-                  <BellIcon className="h-5 w-5" />
-                  <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary border-2 border-background" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                  <h4 className="font-bold">Notifications</h4>
-                </div>
-                <div className="max-h-[300px] overflow-y-auto">
-                  {notifications.map((n) => (
-                    <div key={n.id} className="flex gap-3 p-4 hover:bg-muted/50 transition-colors cursor-pointer border-b last:border-0">
-                      <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", n.bg)}>
-                        <n.icon className={cn("h-4 w-4", n.color)} />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-bold leading-none">{n.title}</p>
-                        <p className="text-xs text-muted-foreground leading-tight">{n.description}</p>
-                        <p className="text-[10px] text-muted-foreground">{n.time}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="p-2 text-center border-t">
-                  <Button variant="ghost" size="sm" className="w-full text-xs text-primary font-bold">
-                    View All Notifications
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <CreditDisplay
+              initialUserId={user?.id ?? null}
+              initialCredits={credits}
+              isDeveloper={isDeveloper}
+            />
+            <NotificationBell />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -148,7 +120,7 @@ export function CreatorLayout({ children, user }: CreatorLayoutProps) {
                   <Link href="/account">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/billing">Billing</Link>
+                  <Link href="/billing">Credits</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/account/settings">Settings</Link>

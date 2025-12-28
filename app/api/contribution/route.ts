@@ -14,8 +14,14 @@ import {
 import { GENERATION_SYSTEM_PROMPT, PRO_STYLE_PROMPT } from "@/lib/prompt";
 import { BASE_VARIABLES, THEME_LIST } from "@/lib/themes";
 import { unsplashTool } from "@/inngest/tool";
-import { getUserWithSubscription } from "@/lib/billing";
 import { isDeveloper } from "@/lib/developers";
+import {
+  ensureUserCredits,
+  MIN_PROMPT_CREDITS,
+  getUsageTokenBreakdown,
+  reserveMinimumCredits,
+  settleUsageCharge,
+} from "@/lib/credits";
 
 const model = openrouterAi(OPENROUTER_MODEL_ID);
 
@@ -72,7 +78,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: contributions });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       { error: "Failed to fetch contributions." },
       { status: 500 }
@@ -135,9 +141,18 @@ export async function POST(request: Request) {
             subtitle: "Contribution preview",
           });
     } else {
-      const ownerPlan = await getUserWithSubscription(shareLink.project.userId);
-      const isDev = await isDeveloper(shareLink.project.userId);
-      const plan = isDev ? "PRO" : ownerPlan?.plan ?? "FREE";
+      const contributorIsDev = await isDeveloper(user.id);
+      await ensureUserCredits(user.id);
+      const userCredits = await prisma.user.findUnique({
+        where: { kindeId: user.id },
+        select: { credits: true },
+      });
+      if (!contributorIsDev && (userCredits?.credits ?? 0) < MIN_PROMPT_CREDITS) {
+        return NextResponse.json(
+          { error: "Not enough credits to generate content." },
+          { status: 402 }
+        );
+      }
 
       const selectedTheme = THEME_LIST.find(
         (theme) => theme.id === shareLink.project.theme
@@ -146,8 +161,7 @@ export async function POST(request: Request) {
         ${BASE_VARIABLES}
         ${selectedTheme?.style || ""}
       `;
-      const proStyle =
-        plan === "PRO" ? `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n` : "";
+      const proStyle = `\nPRO STYLE REFERENCE:\n${PRO_STYLE_PROMPT}\n`;
 
       const buildPrompt = (extraInstruction?: string) => `
         USER REQUEST: ${prompt}
@@ -174,6 +188,13 @@ export async function POST(request: Request) {
 
       const runGeneration = async (extraInstruction?: string) => {
         try {
+          const minimumCharge = await reserveMinimumCredits({
+            kindeId: user.id,
+            reason: "contribution.generate.minimum",
+          });
+          if (!minimumCharge.ok) {
+            throw new Error("NOT_ENOUGH_CREDITS");
+          }
           const result = await generateText({
             model,
             system: GENERATION_SYSTEM_PROMPT,
@@ -184,8 +205,27 @@ export async function POST(request: Request) {
             prompt: buildPrompt(extraInstruction),
             maxOutputTokens: 3000,
           });
-          return result.text ?? "";
+          const { totalTokens, promptTokens, completionTokens } =
+            getUsageTokenBreakdown(result.usage);
+          const settle = await settleUsageCharge({
+            kindeId: user.id,
+            usageTokens: totalTokens,
+            promptTokens,
+            completionTokens,
+            reason: "contribution.generate",
+          });
+          if (!settle.ok) {
+            throw new Error("NOT_ENOUGH_CREDITS");
+          }
+          return { text: result.text ?? "", usage: result.usage };
         } catch {
+          const minimumCharge = await reserveMinimumCredits({
+            kindeId: user.id,
+            reason: "contribution.generate.retry.minimum",
+          });
+          if (!minimumCharge.ok) {
+            throw new Error("NOT_ENOUGH_CREDITS");
+          }
           const result = await generateText({
             model,
             system: GENERATION_SYSTEM_PROMPT,
@@ -193,15 +233,50 @@ export async function POST(request: Request) {
             prompt: buildPrompt(extraInstruction),
             maxOutputTokens: 3000,
           });
-          return result.text ?? "";
+          const { totalTokens, promptTokens, completionTokens } =
+            getUsageTokenBreakdown(result.usage);
+          const settle = await settleUsageCharge({
+            kindeId: user.id,
+            usageTokens: totalTokens,
+            promptTokens,
+            completionTokens,
+            reason: "contribution.generate.retry",
+          });
+          if (!settle.ok) {
+            throw new Error("NOT_ENOUGH_CREDITS");
+          }
+          return { text: result.text ?? "", usage: result.usage };
         }
       };
 
-      let finalHtml = await runGeneration();
+      let final: { text: string; usage?: any };
+      try {
+        final = await runGeneration();
+      } catch (error) {
+        if ((error as Error).message === "NOT_ENOUGH_CREDITS") {
+          return NextResponse.json(
+            { error: "Not enough credits to generate content." },
+            { status: 402 }
+          );
+        }
+        throw error;
+      }
+      let finalHtml = final.text;
       if (!isLikelyHtml(finalHtml) || !isLikelyUiHtml(finalHtml)) {
-        finalHtml = await runGeneration(
-          "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
-        );
+        try {
+          final = await runGeneration(
+            "Return ONLY raw HTML that starts with <div>. No prose, no markdown, no links, no source mentions."
+          );
+        } catch (error) {
+          if ((error as Error).message === "NOT_ENOUGH_CREDITS") {
+            return NextResponse.json(
+              { error: "Not enough credits to generate content." },
+              { status: 402 }
+            );
+          }
+          throw error;
+        }
+        finalHtml = final.text;
       }
 
       const extracted = extractHtmlRoot(finalHtml) ?? finalHtml;
@@ -244,7 +319,7 @@ export async function POST(request: Request) {
       data: contribution,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       { error: "Failed to create contribution." },
       { status: 500 }

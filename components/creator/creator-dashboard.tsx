@@ -16,7 +16,7 @@ import {
   Wand2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
+ 
 
 type CreatorDashboardProps = {
   userName?: string | null;
@@ -27,20 +27,27 @@ type CreatorDashboardProps = {
     picture?: string | null;
   };
   initialIsDeveloper?: boolean;
+  credits?: number;
 };
 
-const studioStats = [
+const formatCredits = (credits?: number | null, isDeveloper?: boolean) => {
+  if (isDeveloper) return "Unlimited";
+  if (typeof credits === "number") {
+    return credits.toLocaleString("en-US");
+  }
+  return "--";
+};
+
+const buildStudioStats = (credits?: number | null, isDeveloper?: boolean) => [
   { label: "Active modules", value: "6", meta: "2 launching now" },
   { label: "Live workspaces", value: "12", meta: "Across product teams" },
+  {
+    label: "Credits remaining",
+    value: formatCredits(credits, isDeveloper),
+    meta: "AI generation balance",
+  },
   { label: "Automation runs", value: "48", meta: "Last 7 days" },
-  { label: "Knowledge vault", value: "1,204", meta: "Docs + assets" },
 ];
-
-
-
-
-
-
 
 
 
@@ -96,7 +103,7 @@ const ModuleUsageGraph = () => {
   const padding = 20;
 
   return (
-    <div className="relative h-[180px] w-full">
+    <div className="relative h-45 w-full">
       <div className="flex h-full items-end justify-between gap-2 px-2">
         {usageData.map((data, i) => {
           const barHeight = (data.value / maxVal) * height;
@@ -155,8 +162,10 @@ const CreatorDashboard = ({
   userName,
   initialUser,
   initialIsDeveloper,
+  credits,
 }: CreatorDashboardProps) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const studioStats = buildStudioStats(credits ?? null, initialIsDeveloper);
 
   useLayoutEffect(() => {
     let ctx: { revert: () => void } | undefined;
@@ -217,7 +226,7 @@ const CreatorDashboard = ({
         data-studio-hero
         className="relative overflow-hidden rounded-3xl border bg-card/70 p-8 shadow-sm md:p-10"
       >
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.16),_transparent_60%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.16),transparent_60%)]" />
         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.2em] text-primary">

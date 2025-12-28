@@ -751,13 +751,9 @@ export const FREE_THEME_IDS = [
   "purple-yellow",
 ];
 
-export const getThemesForPlan = (plan?: string) =>
-  plan === "PRO"
-    ? THEME_LIST
-    : THEME_LIST.filter((theme) => FREE_THEME_IDS.includes(theme.id));
+export const getThemesForPlan = () => THEME_LIST;
 
-export const isThemeAllowedForPlan = (themeId: string, plan?: string) =>
-  plan === "PRO" || FREE_THEME_IDS.includes(themeId);
+export const isThemeAllowedForPlan = (_themeId: string) => true;
 
 export function parseThemeColors(style: string) {
   const colors: Record<string, string> = {};

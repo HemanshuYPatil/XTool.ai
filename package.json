@@ -1,5 +1,5 @@
 {
-  "name": "xdesign-ai",
+  "name": "xtool.ai",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -32,6 +32,7 @@
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.31.2",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "gsap": "^3.12.5",

@@ -33,7 +33,6 @@ const Canvas = ({
     setSelectedFrameId,
     loadingStatus,
     setLoadingStatus,
-    plan,
     setSelectedElement,
     themeDirty,
   } = useCanvas();
@@ -61,10 +60,10 @@ const Canvas = ({
           projectId,
         });
         if (response.data) {
-          console.log("Thumbnail saved", response.data);
+          void response.data;
         }
       } catch (error) {
-        console.log(error);
+        console.error(error);
       } finally {
         setIsSaving(false);
       }
@@ -131,10 +130,6 @@ const Canvas = ({
 
   const handleCanvasScreenshot = useCallback(async () => {
     try {
-      if (plan !== "PRO") {
-        toast.error("Upgrade to Pro to export images.");
-        return;
-      }
       const result = getCanvasHtmlContent();
       if (!result?.html) {
         toast.error("Failed to get canvas content");
@@ -165,12 +160,12 @@ const Canvas = ({
       window.URL.revokeObjectURL(url);
       toast.success("Screenshot downloaded");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Failed to screenshot canvas");
     } finally {
       setIsScreenshotting(false);
     }
-  }, [plan, projectName, setSelectedFrameId]);
+  }, [projectName, setSelectedFrameId]);
 
   const currentStatus = isSaving
     ? "finalizing"

@@ -100,7 +100,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       { error: "Failed to process contribution." },
       { status: 500 }

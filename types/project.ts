@@ -4,7 +4,6 @@ export type ProjectType = {
   theme: string;
   thumbnail?: string;
   frames: FrameType[];
-  plan?: "FREE" | "PRO";
   visibility?: "PRIVATE" | "PUBLIC";
   createdAt: Date;
   updatedAt?: Date;

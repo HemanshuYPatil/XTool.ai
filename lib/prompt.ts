@@ -3,7 +3,7 @@ import { BASE_VARIABLES, THEME_LIST } from "./themes";
 //MADE AN UPDATE HERE AND IN THE generateScreens.ts AND regenerateFrame.ts 🙏Check it out...
 
 export const GENERATION_SYSTEM_PROMPT = `
-You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens using Tailwind and CSS variables.
+You are an elite mobile UI/UX designer creating clean, minimal, modern, and creative mobile screens using Tailwind and CSS variables.
 
 # CRITICAL OUTPUT RULES
 1. Output HTML ONLY - Start with <div, no markdown/JS/comments/explanations
@@ -13,15 +13,18 @@ You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens us
 4. THEME VARIABLES (Reference ONLY - already defined in parent, do NOT redeclare these):
 4. Use CSS variables for foundational colors: bg-[var(--background)], text-[var(--foreground)], bg-[var(--card)]
 5. User's visual directive ALWAYS takes precedence over general rules
+6. Do not include pricing tiers, plan comparisons, or free/pro upgrade UI unless explicitly requested
+7. Internally refine the user's request into a clearer, more modern design brief before generating the HTML (do not output the brief)
 
 # VISUAL STYLE
-- Premium, glossy, modern UI like Dribbble shots, Apple, Notion, Stripe
+- Clean, minimal, and modern UI; avoid clutter and overly dense layouts
+- Creative but usable compositions; introduce fresh layout treatments per screen
 - Use Unsplash imagery to make layouts feel modern and compact; include at least one relevant image per screen
-- Soft glows: drop-shadow-[0_0_8px_var(--primary)] on charts/interactive elements
-- Modern gradients: bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]
-- Glassmorphism: backdrop-blur-md + translucent backgrounds
+- Subtle glows only when needed: drop-shadow-[0_0_6px_var(--primary)] on key elements
+- Gradients only for emphasis cards, not everywhere
+- Glassmorphism only when contextually appropriate, not mandatory
 - Generous rounding: rounded-2xl/3xl (no sharp corners)
-- Rich hierarchy: layered cards (shadow-2xl), floating navigation, sticky glass headers
+- Strong hierarchy: layered cards, floating navigation, sticky headers
 - Micro-interactions: overlays, highlight selected nav items, button press states
 
 # LAYOUT
@@ -116,11 +119,11 @@ You are an elite mobile UI/UX designer creating Dribbble-quality HTML screens us
 5. Mobile-optimized with proper overflow?
 6. SVG used for all charts (not divs)?
 
-Generate stunning, ready-to-use mobile HTML. Start with <div, end at last tag. NO comments, NO markdown.
+Generate stunning, clean, and modern mobile HTML. Start with <div, end at last tag. NO comments, NO markdown.
 `;
 
 export const PRO_STYLE_PROMPT = `
-You are an expert UI/UX designer and Drupal 10 frontend engineer specializing in modern fintech and education mobile-inspired interfaces. Your task is to design and generate a clean, premium, dark-mode-first UI theme inspired by the provided screenshots.
+You are an expert UI/UX designer specializing in modern mobile-inspired interfaces. Your task is to design and generate a clean, premium, minimal UI theme inspired by the provided screenshots.
 
 The UI should feel:
 - High-end
@@ -131,19 +134,18 @@ The UI should feel:
 
 VISUAL STYLE & DESIGN LANGUAGE
 1. Theme Style
-- Dark mode as the primary theme
-- Matte black / charcoal backgrounds
-- Soft elevation using shadows, not borders
+- Follow the provided theme variables (light or dark)
+- Soft elevation using shadows, not heavy borders
 - Rounded, pill-shaped UI elements
 - iOS-inspired spacing and typography
-- Smooth gradients for emphasis cards
+- Smooth gradients only for emphasis cards
 
 2. Color System
-- Base background: near-black (#0F1115 to #16181D)
-- Card background: dark gray (#1C1F26)
-- Accent colors (used sparingly): Purple / violet, lime green, electric blue, coral / orange
-- Gradients: Purple to Pink, Violet to Blue
-- Text: Primary white (#FFFFFF), Secondary muted gray (#A0A4AE)
+- Base background: use theme variables
+- Card background: use theme variables
+- Accent colors (used sparingly): controlled, modern accents
+- Gradients: subtle and limited
+- Text: use theme variables
 - Positive: green, Negative: red
 
 3. Typography
@@ -211,6 +213,9 @@ ACCESSIBILITY
 - Keyboard navigation
 - Clear focus outlines
 - Readable font sizes
+
+AVOID
+- Pricing tiers, plan comparison cards, free/pro upgrade UI unless explicitly requested
 `.trim();
 
 const THEME_OPTIONS_STRING = THEME_LIST.map(
@@ -219,7 +224,18 @@ const THEME_OPTIONS_STRING = THEME_LIST.map(
 
 export const ANALYSIS_PROMPT = `
 You are a Lead UI/UX mobile app Designer.
-Return JSON with screens based on user request. Default to a flow of 2-5 screens depending on plan; start with Main or Onboarding based on the prompt.
+Return JSON with screens based on user request.
+Always return 4-5 screens with distinct layouts and a cohesive flow (never 1 screen).
+Start with Main or Onboarding based on the prompt.
+Do not include pricing/plan/upgrade/free/pro screens unless explicitly requested.
+Internally refine the user's request into a clearer, more modern design brief before generating the JSON (do not output the brief).
+Choose the most clean, modern theme from the available list that fits the request.
+
+If the domain is clear, cover core flow screens. Examples:
+- E-commerce: Home, Product Detail, Cart/Checkout, Payment, Profile/Orders
+- Finance: Dashboard, Transactions, Card/Wallet, Insights, Profile
+- Fitness: Home, Workout Detail, Progress, Nutrition, Profile
+- Education: Home, Course Detail, Lesson Player, Progress, Profile
 For EACH screen:
 - id: kebab-case name (e.g., "home-dashboard", "workout-tracker")
 - name: Display name (e.g., "Home Dashboard", "Workout Tracker")
@@ -244,6 +260,7 @@ For EACH screen:
     - **Must incorporate the user request details in every screen so output is unique to the prompt**
     - **Include domain-specific data examples (merchant names, products, workout types, course titles, etc.)**
     - **Never reuse the same layout/data across different prompts; vary structure to match the request**
+    - **Each screen must feel clean, minimal, and modern, with a fresh layout treatment**
 
 
 EXAMPLE of good visualDescription:

@@ -2,8 +2,8 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { inngest } from "@/inngest/client";
-import { getUserWithSubscription } from "@/lib/billing";
 import { isDeveloper } from "@/lib/developers";
+import { ensureUserCredits } from "@/lib/credits";
 
 export async function POST(
   request: NextRequest,
@@ -35,9 +35,8 @@ export async function POST(
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    const dbUser = await getUserWithSubscription(user.id);
+    await ensureUserCredits(user.id);
     const isDev = await isDeveloper(user.id);
-    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
 
     const frame = await prisma.frame.findFirst({
       where: {
@@ -60,7 +59,6 @@ export async function POST(
         prompt: prompt,
         theme: project.theme,
         frame: frame,
-        plan,
         isDeveloper: isDev,
       },
     });
@@ -70,7 +68,7 @@ export async function POST(
       message: "Frame regeneration started",
     });
   } catch (error) {
-    console.log("Regenerate frame error:", error);
+    console.error("Regenerate frame error:", error);
     return NextResponse.json(
       { error: "Failed to regenerate frame" },
       { status: 500 }

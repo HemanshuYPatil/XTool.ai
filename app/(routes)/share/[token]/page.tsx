@@ -7,6 +7,7 @@ import { getHTMLWrapper } from "@/lib/frame-wrapper";
 import { THEME_LIST } from "@/lib/themes";
 import ContributionPanel from "@/components/share/contribution-panel";
 import { ArrowLeftIcon } from "lucide-react";
+import { CreditDisplay } from "@/components/credits/credit-display";
 
 const SharePage = async ({
   params,
@@ -58,6 +59,7 @@ const SharePage = async ({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Logo />
           <div className="flex items-center gap-3">
+            {isAuthenticated && <CreditDisplay />}
             <Link
               href="/"
               className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground shadow-sm transition hover:bg-muted/60"
@@ -151,7 +153,7 @@ const SharePage = async ({
                     frame.id
                   )}
                   sandbox="allow-scripts allow-same-origin"
-                  className="h-[520px] w-full"
+                  className="h-130 w-full"
                 />
               </div>
             </div>

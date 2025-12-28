@@ -4,10 +4,9 @@ import prisma from "@/lib/prisma";
 import { inngest } from "@/inngest/client";
 import {
   ensureUserFromKinde,
-  getUserWithSubscription,
 } from "@/lib/billing";
-import { isThemeAllowedForPlan } from "@/lib/themes";
 import { isDeveloper } from "@/lib/developers";
+import { ensureUserCredits } from "@/lib/credits";
 
 export async function GET(
   req: NextRequest,
@@ -32,9 +31,6 @@ export async function GET(
         frames: true,
       },
     });
-    const dbUser = await getUserWithSubscription(user.id);
-    const isDev = await isDeveloper(user.id);
-
     if (!project) {
       return NextResponse.json(
         {
@@ -46,11 +42,10 @@ export async function GET(
 
     return NextResponse.json({
       ...project,
-      plan: isDev ? "PRO" : dbUser?.plan ?? "FREE",
-      isDeveloper: isDev,
+      isDeveloper: await isDeveloper(user.id),
     });
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return NextResponse.json(
       {
         error: "Fail to fetch project",
@@ -77,9 +72,7 @@ export async function POST(
 
     const userId = user.id;
     await ensureUserFromKinde(user);
-    const dbUser = await getUserWithSubscription(userId);
     const isDev = await isDeveloper(userId);
-    const plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
     const project = await prisma.project.findFirst({
       where: {
         id,
@@ -90,12 +83,7 @@ export async function POST(
     });
 
     if (!project) throw new Error("Project not found");
-    if (!isDev && plan === "FREE" && project.frames.length >= 1) {
-      return NextResponse.json(
-        { error: "Free plan supports one layout per project." },
-        { status: 403 }
-      );
-    }
+    await ensureUserCredits(userId);
 
     //Trigger the Inngest
     try {
@@ -107,19 +95,18 @@ export async function POST(
           prompt,
           frames: project.frames,
           theme: project.theme,
-          plan,
           isDeveloper: isDev,
         },
       });
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
 
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       {
         error: "Failed to generate frame",
@@ -157,20 +144,10 @@ export async function PATCH(
     }
 
     const userId = user.id;
-    let plan: string | undefined;
     const isDev = await isDeveloper(userId);
 
     if (themeId) {
       await ensureUserFromKinde(user);
-      const dbUser = await getUserWithSubscription(userId);
-      plan = isDev ? "PRO" : dbUser?.plan ?? "FREE";
-
-      if (!isDev && !isThemeAllowedForPlan(themeId, plan)) {
-        return NextResponse.json(
-          { error: "Theme not available on the free plan." },
-          { status: 403 }
-        );
-      }
     }
 
     const project = await prisma.project.update({
@@ -187,7 +164,7 @@ export async function PATCH(
       project,
     });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       {
         error: "Failed to update project",
@@ -232,7 +209,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.log("Error occured ", error);
+    console.error("Error occured ", error);
     return NextResponse.json(
       { error: "Failed to delete project" },
       { status: 500 }

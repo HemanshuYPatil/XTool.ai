@@ -1,6 +1,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { publishFrame } from "@/lib/convex-client";
 
 export async function PATCH(
   request: Request,
@@ -50,6 +51,15 @@ export async function PATCH(
     const updated = await prisma.frame.update({
       where: { id: frameId },
       data: { htmlContent },
+    });
+
+    await publishFrame({
+      projectId,
+      userId: user.id,
+      frameId: updated.id,
+      title: updated.title,
+      htmlContent: updated.htmlContent,
+      isLoading: false,
     });
 
     return NextResponse.json({

@@ -59,7 +59,7 @@ export const ModuleCards = () => {
         {modules.map((module) => (
           <Card 
             key={module.title}
-            className="group relative p-8 rounded-[2rem] border bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 overflow-hidden"
+            className="group relative p-8 rounded-4xl border bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 overflow-hidden"
           >
             {/* Decorative Background Icon */}
             <module.icon className="absolute -right-8 -bottom-8 size-48 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity duration-500" />

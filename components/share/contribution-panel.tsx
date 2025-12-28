@@ -67,7 +67,7 @@ const ContributionPanel = ({
       setSelectedFrame(null);
       setMode("ai");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(
         (error as Error)?.message ?? "Unable to submit contribution."
       );

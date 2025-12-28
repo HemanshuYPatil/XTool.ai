@@ -31,14 +31,13 @@ const CanvasFloatingToolbar = ({
     themes,
     theme: currentTheme,
     setTheme,
-    plan,
     frames,
     updateFrame: updateFrameState,
     loadingStatus,
     themeDirty,
     markThemeSaved,
   } = useCanvas();
-  const canExport = plan === "PRO";
+  const canExport = true;
   const [promptText, setPromptText] = useState<string>("");
   const [isSavingFrames, setIsSavingFrames] = useState(false);
 
@@ -85,7 +84,7 @@ const CanvasFloatingToolbar = ({
       }
       toast.success("Project saved");
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Failed to save changes");
     } finally {
       setIsSavingFrames(false);
