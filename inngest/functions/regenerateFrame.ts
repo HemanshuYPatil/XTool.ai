@@ -171,6 +171,7 @@ export const regenerateFrame = inngest.createFunction(
             - All elements must contribute to the final scrollHeight so your parent iframe can correctly resize.
         10. **Never output markdown links or plain URLs. If you use an image, always render it as an <img> tag.**
         11. **Do not add explanatory text, image source text, or conversational sentences.**
+        12. **Include at least one <img> that uses searchUnsplash output for the main visual.**
         Generate the complete, production-ready HTML for this screen now.
         ${extraInstruction ?? ""}
         `.trim();

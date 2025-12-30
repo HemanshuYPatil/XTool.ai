@@ -283,19 +283,18 @@ export const syncRealtimeCredits = async ({
     await publishUserCredits({ userId: kindeId, credits: user.credits });
   }
 
-  await Promise.all(
-    transactions.map((tx) =>
-      publishCreditTransaction({
-        userId: kindeId,
-        transactionId: tx.id,
-        amount: tx.amount,
-        reason: tx.reason,
-        modelTokens: tx.modelTokens ?? undefined,
-        details: Array.isArray(tx.details) ? tx.details : undefined,
-        createdAt: tx.createdAt.getTime(),
-      })
-    )
-  );
+  // Publish sequentially to avoid Convex write conflicts on bulk sync.
+  for (const tx of transactions) {
+    await publishCreditTransaction({
+      userId: kindeId,
+      transactionId: tx.id,
+      amount: tx.amount,
+      reason: tx.reason,
+      modelTokens: tx.modelTokens ?? undefined,
+      details: Array.isArray(tx.details) ? tx.details : undefined,
+      createdAt: tx.createdAt.getTime(),
+    });
+  }
 };
 
 export const getCreditTransactionsForUser = async ({

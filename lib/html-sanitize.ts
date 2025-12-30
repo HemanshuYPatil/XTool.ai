@@ -25,9 +25,9 @@ export const sanitizeGeneratedHtml = (html: string) => {
       `<img src="${url}" alt="${alt || "Image"}" class="w-full h-full object-cover" />`
   );
 
-  output = output.replace(/^.*unsplash.*$/gim, "");
-  output = output.replace(/^.*click the link.*$/gim, "");
-  output = output.replace(/^.*view or download.*$/gim, "");
+  output = output.replace(/^(?!.*<img\b)[^<]*unsplash[^<]*$/gim, "");
+  output = output.replace(/^[^<]*click the link[^<]*$/gim, "");
+  output = output.replace(/^[^<]*view or download[^<]*$/gim, "");
 
   return output.replace(/\n{3,}/g, "\n\n").trim();
 };

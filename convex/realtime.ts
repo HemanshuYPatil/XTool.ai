@@ -1,6 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+const resolveServerSecret = () =>
+  process.env.CONVEX_SERVER_SECRET ?? process.env.NEXT_PUBLIC_CONVEX_SERVER_SECRET;
+
 const requireAuthorizedUser = async (
   ctx: { auth: { getUserIdentity: () => Promise<{ subject?: string } | null> } },
   userId: string,
@@ -14,8 +17,19 @@ const requireAuthorizedUser = async (
     return;
   }
 
-  if (!serverSecret || serverSecret !== process.env.CONVEX_SERVER_SECRET) {
+  const expectedSecret = resolveServerSecret();
+  if (!serverSecret) {
     throw new Error("Unauthorized");
+  }
+
+  if (expectedSecret && serverSecret !== expectedSecret) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!expectedSecret && process.env.NODE_ENV !== "production") {
+    console.warn(
+      "Convex server secret is not configured; allowing dev request with provided secret."
+    );
   }
 };
 
@@ -134,6 +148,10 @@ export const setUserCredits = mutation({
       .query("realtimeCredits")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
+
+    if (existing && existing.credits === args.credits) {
+      return;
+    }
 
     const payload = {
       userId: args.userId,

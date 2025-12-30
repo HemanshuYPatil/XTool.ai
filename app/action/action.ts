@@ -1,29 +1,55 @@
 "use server";
 import { OPENROUTER_PROJECT_NAME_MODEL_ID } from "@/lib/ai-models";
 
-const toShortName = (input: string) => {
-  const lettersOnly = input.replace(/[^a-zA-Z]/g, "").toUpperCase();
-  if (lettersOnly.length >= 3) {
-    return lettersOnly.slice(0, 4);
-  }
+const toTwoWordName = (input: string) => {
   const words = input
     .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .split(" ")
     .filter(Boolean);
-  const initials = words.map((word) => word[0] ?? "").join("").toUpperCase();
-  const merged = `${initials}${lettersOnly}`.replace(/[^A-Z]/g, "");
-  if (merged.length >= 3) {
-    return merged.slice(0, 4);
+
+  const cleaned = words
+    .slice(0, 2)
+    .map((word) => {
+      const letters = word.replace(/[^a-zA-Z0-9]/g, "");
+      if (!letters) return "";
+      return letters[0].toUpperCase() + letters.slice(1).toLowerCase();
+    })
+    .filter(Boolean);
+
+  if (cleaned.length) {
+    return cleaned.join(" ");
   }
-  return "QMOD";
+
+  return "New Project";
+};
+
+const normalizeProjectName = (input: string) => {
+  const words = input
+    .replace(/[^a-zA-Z0-9\s-]/g, " ")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return words
+    .map((word) => {
+      const letters = word.replace(/[^a-zA-Z0-9]/g, "");
+      if (!letters) return "";
+      return letters[0].toUpperCase() + letters.slice(1).toLowerCase();
+    })
+    .filter(Boolean)
+    .join(" ");
 };
 
 export async function generateProjectName(prompt: string) {
   try {
     if (!process.env.OPENROUTER_NAME_API_KEY) {
-      return toShortName(prompt);
+      return toTwoWordName(prompt);
     }
 
     const response = await fetch(
@@ -42,10 +68,11 @@ export async function generateProjectName(prompt: string) {
             {
               role: "system",
               content: [
-                "Generate a 3-4 letter project code based on the user's prompt.",
-                "- Return only 3-4 uppercase letters (A-Z).",
-                "- No spaces, digits, punctuation, or words.",
-                "- Return only the code, no quotes.",
+                "Generate a short project name based on the user's prompt.",
+                "- Return a name with a maximum of two words.",
+                "- Use Title Case words (e.g., Travel Planner).",
+                "- No punctuation or quotes.",
+                "- Return only the name, no extra text.",
               ].join("\n"),
             },
             { role: "user", content: prompt },
@@ -67,9 +94,10 @@ export async function generateProjectName(prompt: string) {
       ""
     ).trim();
 
-    return text ? toShortName(text) : toShortName(prompt);
+    const normalized = text ? normalizeProjectName(text) : "";
+    return normalized || toTwoWordName(prompt);
   } catch (error) {
     console.error(error);
-    return toShortName(prompt);
+    return toTwoWordName(prompt);
   }
 }

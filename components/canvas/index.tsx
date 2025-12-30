@@ -36,7 +36,7 @@ const Canvas = ({
     setSelectedElement,
     themeDirty,
   } = useCanvas();
-  const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.EDIT);
+  const [toolMode, setToolMode] = useState<ToolModeType>(TOOL_MODE_ENUM.SELECT);
   const [zoomPercent, setZoomPercent] = useState<number>(53);
   const [currentScale, setCurrentScale] = useState<number>(0.53);
   const [openHtmlDialog, setOpenHtmlDialog] = useState(false);
@@ -167,12 +167,31 @@ const Canvas = ({
     }
   }, [projectName, setSelectedFrameId]);
 
+  const hasRenderableFrame = frames.some((frame) =>
+    Boolean(frame.htmlContent?.trim())
+  );
+  const hasLoadingFrames = frames.some(
+    (frame) => Boolean(frame.isLoading) && !frame.htmlContent?.trim()
+  );
+
+  useEffect(() => {
+    if (
+      loadingStatus &&
+      loadingStatus !== "idle" &&
+      loadingStatus !== "completed" &&
+      hasRenderableFrame &&
+      !hasLoadingFrames
+    ) {
+      setLoadingStatus("idle");
+    }
+  }, [hasLoadingFrames, hasRenderableFrame, loadingStatus, setLoadingStatus]);
+
   const currentStatus = isSaving
     ? "finalizing"
-    : isPending && (loadingStatus === null || loadingStatus === "idle")
+    : isPending || !hasRenderableFrame
     ? "fetching"
-    : loadingStatus !== "idle" && loadingStatus !== "completed"
-    ? loadingStatus
+    : hasLoadingFrames
+    ? "generating"
     : null;
   return (
     <>
@@ -250,6 +269,8 @@ const Canvas = ({
                       //     />
                       //   );
                       // }
+                      const isFrameLoading =
+                        Boolean(frame.isLoading) && !frame.htmlContent?.trim();
                       return (
                         <DeviceFrame
                           key={frame.id}
@@ -257,7 +278,7 @@ const Canvas = ({
                           projectId={projectId}
                           title={frame.title}
                           html={frame.htmlContent}
-                          isLoading={frame.isLoading}
+                          isLoading={isFrameLoading}
                           scale={currentScale}
                           initialPosition={{
                             x: baseX,

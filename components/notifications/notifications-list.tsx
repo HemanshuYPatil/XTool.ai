@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { api } from "@/convex/_generated/api";
@@ -42,7 +42,20 @@ export const NotificationsList = ({
   );
   const data = useQuery(api.realtime.getUserCreditTransactions, queryArgs);
 
-  const source = items ?? data;
+  const [cachedData, setCachedData] = useState<typeof data>(undefined);
+
+  useEffect(() => {
+    if (data && data.length) {
+      setCachedData(data);
+    }
+  }, [data]);
+
+  const source =
+    items !== undefined
+      ? items
+      : data && data.length
+        ? data
+        : cachedData;
 
   const notifications = useMemo(() => {
     if (!source || source.length === 0) return [];

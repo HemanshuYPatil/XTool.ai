@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -31,12 +32,22 @@ export const useRealtimeCredits = ({
   initialCredits: number | null;
   isDeveloper: boolean;
 }) => {
+  const lastKnownRef = useRef<number | null>(initialCredits ?? null);
   const data = useQuery(
     api.realtime.getUserCredits,
     isDeveloper ? "skip" : {}
   );
   if (isDeveloper) return null;
-  return typeof data?.credits === "number" ? data.credits : initialCredits;
+  useEffect(() => {
+    if (typeof initialCredits === "number" && lastKnownRef.current == null) {
+      lastKnownRef.current = initialCredits;
+    }
+  }, [initialCredits]);
+  if (typeof data?.credits === "number") {
+    lastKnownRef.current = data.credits;
+    return data.credits;
+  }
+  return lastKnownRef.current ?? initialCredits;
 };
 
 export const RealtimeCreditsValue = ({

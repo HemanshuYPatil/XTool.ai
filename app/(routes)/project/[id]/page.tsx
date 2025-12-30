@@ -29,12 +29,14 @@ const Page = () => {
   }, [error, isError, router]);
 
   useEffect(() => {
-    if (project?.name !== "Q model") return;
+    if (!project) return;
+    if (project.name !== "Q model") return;
+    if (project.frames?.length) return;
     const timer = setTimeout(() => {
       refetch();
     }, 4000);
     return () => clearTimeout(timer);
-  }, [project?.name, refetch]);
+  }, [project, refetch]);
 
   if (isError) {
     return (

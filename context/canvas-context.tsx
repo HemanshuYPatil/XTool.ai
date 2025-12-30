@@ -90,6 +90,7 @@ export const CanvasProvider = ({
   );
   const lastStatusRef = useRef<LoadingStatusType | null>(null);
   const realtimeFrameIdsRef = useRef<Set<string>>(new Set());
+  const hasRealtimeFramesRef = useRef(false);
 
   const updateElement = useCallback(
     (
@@ -148,9 +149,10 @@ export const CanvasProvider = ({
     api.realtime.getProjectState,
     projectId ? { projectId } : "skip"
   );
+  const enableRealtimeFrames = false;
   const realtimeFrames = useQuery(
     api.realtime.getProjectFrames,
-    projectId ? { projectId } : "skip"
+    enableRealtimeFrames && projectId ? { projectId } : "skip"
   );
 
   useEffect(() => {
@@ -175,7 +177,14 @@ export const CanvasProvider = ({
   }, [projectId, projectRealtime]);
 
   useEffect(() => {
+    if (!enableRealtimeFrames) return;
     if (!projectId || !realtimeFrames) return;
+    if (realtimeFrames.length === 0 && !hasRealtimeFramesRef.current && frames.length > 0) {
+      return;
+    }
+    if (realtimeFrames.length > 0) {
+      hasRealtimeFramesRef.current = true;
+    }
     const ordered = [...realtimeFrames].sort((a, b) => {
       if (a.order != null && b.order != null) return a.order - b.order;
       return a.updatedAt - b.updatedAt;
@@ -190,18 +199,20 @@ export const CanvasProvider = ({
       );
       ordered.forEach((frame) => {
         const idx = next.findIndex((item) => item.id === frame.frameId);
+        const existing = idx === -1 ? null : next[idx];
+        const hasHtml = Boolean(frame.htmlContent?.trim());
         const updated: FrameType = {
           id: frame.frameId,
           title: frame.title,
           htmlContent: frame.htmlContent,
-          isLoading: frame.isLoading,
+          isLoading: hasHtml ? false : existing?.isLoading ?? false,
         };
         if (idx === -1) next.push(updated);
         else next[idx] = { ...next[idx], ...updated };
       });
       return next;
     });
-  }, [projectId, realtimeFrames]);
+  }, [projectId, realtimeFrames, frames.length]);
 
   const addFrame = useCallback((frame: FrameType) => {
     setFrames((prev) => [...prev, frame]);

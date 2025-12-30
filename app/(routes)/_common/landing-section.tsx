@@ -228,6 +228,18 @@ const LandingSection = ({
     );
   }, [projects, selectedProjects]);
 
+  const projectIds = useMemo(
+    () => (projects?.length ? projects.map((project: ProjectType) => project.id) : []),
+    [projects]
+  );
+  const allSelected =
+    projectIds.length > 0 && selectedProjects.length === projectIds.length;
+
+  const toggleSelectAll = () => {
+    if (!projectIds.length) return;
+    setSelectedProjects(allSelected ? [] : projectIds);
+  };
+
   const onConfirmDelete = async () => {
     if (!deleteProject) return;
     await deleteProjectMutation.mutateAsync(deleteProject.id);
@@ -393,13 +405,23 @@ const LandingSection = ({
           <div className="mx-auto max-w-3xl">
             {userId && (
               <div>
-                <h1
-                  className="font-medium text-xl
-              tracking-tight mb-2
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                  <h1
+                    className="font-medium text-xl
+              tracking-tight
               "
-                >
-                  Recent Projects
-                </h1>
+                  >
+                    Recent Projects
+                  </h1>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={toggleSelectAll}
+                    disabled={!projects?.length}
+                  >
+                    {allSelected ? "Clear all" : "Select all"}
+                  </Button>
+                </div>
 
                 {isLoading ? (
                   <div
