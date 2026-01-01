@@ -7,7 +7,6 @@ import Logo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeftIcon,
-  ChevronRightIcon,
   MoonIcon,
   MoreHorizontalIcon,
   SunIcon,
@@ -16,7 +15,6 @@ import {
   SmartphoneIcon,
   GlobeIcon,
   LayersIcon,
-  Share2Icon,
   UsersIcon,
   MessageSquareIcon,
   HistoryIcon,
@@ -44,6 +42,7 @@ import {
 import { getHTMLWrapper } from "@/lib/frame-wrapper";
 import { THEME_LIST } from "@/lib/themes";
 import { CreditDisplay } from "@/components/credits/credit-display";
+import { buildExportFile, ExportTarget } from "@/lib/export";
 
 const Header = ({
   projectName,
@@ -78,6 +77,8 @@ const Header = ({
   const [selectedContribution, setSelectedContribution] = useState<any | null>(
     null
   );
+  const [exportTarget, setExportTarget] = useState<ExportTarget>("react");
+  const [isExporting, setIsExporting] = useState(false);
   const [acceptMode, setAcceptMode] = useState<"overwrite" | "new" | null>(
     null
   );
@@ -169,6 +170,42 @@ const Header = ({
       toast.error("Unable to copy share link.");
     } finally {
       setIsCopying(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!projectId) return;
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/project/${projectId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch project for export.");
+      }
+      const data = await response.json();
+      const frames = (data?.frames ?? []).map((frame: any) => ({
+        title: frame.title ?? "Untitled",
+        htmlContent: frame.htmlContent ?? "",
+      }));
+      const exportFile = buildExportFile({
+        projectName: data?.name ?? projectTitle,
+        frames,
+        themeStyle,
+        target: exportTarget,
+      });
+
+      const blob = new Blob([exportFile.content], { type: exportFile.mime });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = exportFile.filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success("Export ready.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to export project.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -536,52 +573,64 @@ const Header = ({
               {drawerSection === "export" && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="space-y-1">
-                    <h3 className="text-sm font-bold">Export Options</h3>
+                    <h3 className="text-sm font-bold">Export</h3>
                     <p className="text-xs text-muted-foreground">
-                      Download your project in various production-ready formats.
+                      Download a ZIP with a full project scaffold and one file per screen.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     {[
-                      { id: "html", label: "HTML/CSS", icon: GlobeIcon, color: "text-orange-500", bg: "bg-orange-500/10" },
-                      { id: "react", label: "React", icon: Code2Icon, color: "text-blue-500", bg: "bg-blue-500/10" },
-                      { id: "flutter", label: "Flutter", icon: SmartphoneIcon, color: "text-cyan-500", bg: "bg-cyan-500/10" },
-                      { id: "rn", label: "React Native", icon: SmartphoneIcon, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-                    ].map((item) => (
-                      <div
-                        key={item.id}
-                        className="group relative flex flex-col p-4 rounded-2xl border border-border/60 bg-background hover:border-primary/30 hover:shadow-md transition-all cursor-default overflow-hidden"
-                      >
-                        <div className={cn("size-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110", item.bg)}>
-                          <item.icon className={cn("size-5", item.color)} />
-                        </div>
-                        <h4 className="text-sm font-bold mb-1">{item.label}</h4>
-                        <p className="text-[10px] text-muted-foreground font-medium">Production Code</p>
-                        
-                        <div className="mt-4">
-                          <Button size="sm" variant="outline" className="w-full h-8 text-[10px] font-bold rounded-lg border-border/40 opacity-50" disabled>
-                            Notify Me
-                          </Button>
-                        </div>
-
-                        <div className="absolute top-2 right-2">
-                          <div className="px-1.5 py-0.5 rounded bg-muted text-[8px] font-black uppercase tracking-tighter text-muted-foreground/60">
-                            Soon
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      { id: "html", label: "HTML", icon: GlobeIcon },
+                      { id: "react", label: "React", icon: Code2Icon },
+                      { id: "react-native", label: "React Native", icon: SmartphoneIcon },
+                      { id: "flutter", label: "Flutter", icon: SmartphoneIcon },
+                      { id: "nextjs", label: "Next.js", icon: Code2Icon },
+                      { id: "svelte", label: "Svelte", icon: LayersIcon },
+                      { id: "vue", label: "Vue", icon: LayersIcon },
+                      { id: "astro", label: "Astro", icon: LayersIcon },
+                      { id: "solid", label: "Solid", icon: LayersIcon },
+                    ].map((item) => {
+                      const selected = exportTarget === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setExportTarget(item.id as ExportTarget)}
+                          className={cn(
+                            "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all",
+                            selected
+                              ? "border-primary/60 bg-primary/5 text-primary"
+                              : "border-border/60 hover:border-primary/30 hover:bg-muted/40"
+                          )}
+                        >
+                          <span className="flex items-center gap-3 text-sm font-semibold">
+                            <item.icon className="size-4" />
+                            {item.label}
+                          </span>
+                          <span className={cn("text-[10px] font-bold uppercase tracking-wider", selected ? "text-primary" : "text-muted-foreground")}>
+                            {selected ? "Selected" : "Select"}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="p-4 rounded-2xl border border-dashed border-border/80 bg-muted/5 flex flex-col items-center justify-center text-center py-8">
-                    <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
-                      <LayersIcon className="size-6 text-muted-foreground/40" />
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/5 p-4">
+                    <div>
+                      <h4 className="text-sm font-bold">Download export</h4>
+                      <p className="text-[11px] text-muted-foreground">
+                        Includes folder structure and separate files per screen.
+                      </p>
                     </div>
-                    <h4 className="text-sm font-bold text-muted-foreground">More Formats</h4>
-                    <p className="text-[11px] text-muted-foreground/60 mt-1 max-w-50">
-                      We're working on Vue, Svelte, and Figma export support.
-                    </p>
+                    <Button
+                      size="sm"
+                      className="h-10 rounded-xl font-bold"
+                      onClick={handleExport}
+                      disabled={!projectId || isExporting}
+                    >
+                      {isExporting ? <Spinner className="size-3.5" /> : "Download ZIP"}
+                    </Button>
                   </div>
                 </div>
               )}

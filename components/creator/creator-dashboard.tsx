@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   CalendarClockIcon,
   ClapperboardIcon,
@@ -52,15 +52,45 @@ const buildStudioStats = (credits?: number | null, isDeveloper?: boolean) => [
 
 
 
-const usageData = [
-  { day: "Mon", value: 45 },
-  { day: "Tue", value: 52 },
-  { day: "Wed", value: 38 },
-  { day: "Thu", value: 65 },
-  { day: "Fri", value: 48 },
-  { day: "Sat", value: 32 },
-  { day: "Sun", value: 28 },
-];
+const usageData = {
+  daily: [
+    { label: "Mon", xtool: 45, xdesign: 32, xcreator: 28 },
+    { label: "Tue", xtool: 52, xdesign: 45, xcreator: 35 },
+    { label: "Wed", xtool: 38, xdesign: 55, xcreator: 42 },
+    { label: "Thu", xtool: 65, xdesign: 48, xcreator: 50 },
+    { label: "Fri", xtool: 48, xdesign: 62, xcreator: 58 },
+    { label: "Sat", xtool: 32, xdesign: 28, xcreator: 30 },
+    { label: "Sun", xtool: 28, xdesign: 22, xcreator: 25 },
+  ],
+  monthly: [
+    { label: "Jan", xtool: 1200, xdesign: 800, xcreator: 600 },
+    { label: "Feb", xtool: 1500, xdesign: 950, xcreator: 750 },
+    { label: "Mar", xtool: 1300, xdesign: 1100, xcreator: 900 },
+    { label: "Apr", xtool: 1800, xdesign: 1400, xcreator: 1100 },
+    { label: "May", xtool: 2100, xdesign: 1600, xcreator: 1300 },
+    { label: "Jun", xtool: 1900, xdesign: 1800, xcreator: 1500 },
+    { label: "Jul", xtool: 2200, xdesign: 1900, xcreator: 1600 },
+    { label: "Aug", xtool: 2400, xdesign: 2100, xcreator: 1800 },
+    { label: "Sep", xtool: 2100, xdesign: 2300, xcreator: 2000 },
+    { label: "Oct", xtool: 2600, xdesign: 2500, xcreator: 2200 },
+    { label: "Nov", xtool: 2800, xdesign: 2700, xcreator: 2400 },
+    { label: "Dec", xtool: 3200, xdesign: 3000, xcreator: 2800 },
+  ],
+  yearly: [
+    { label: "2022", xtool: 12000, xdesign: 8000, xcreator: 5000 },
+    { label: "2023", xtool: 18000, xdesign: 14000, xcreator: 11000 },
+    { label: "2024", xtool: 25000, xdesign: 22000, xcreator: 18000 },
+    { label: "2025", xtool: 32000, xdesign: 28000, xcreator: 24000 },
+  ],
+};
+
+
+const moduleColors = {
+  xtool: "bg-blue-500",
+  xdesign: "bg-purple-500",
+  xcreator: "bg-orange-500",
+};
+
 
 const recentActivity = [
   {
@@ -97,34 +127,65 @@ const recentActivity = [
   },
 ];
 
-const ModuleUsageGraph = () => {
-  const maxVal = Math.max(...usageData.map((d) => d.value));
-  const height = 120;
-  const width = 400;
-  const padding = 20;
+const ModuleUsageGraph = ({ timeframe }: { timeframe: keyof typeof usageData }) => {
+  const data = usageData[timeframe];
+  const maxVal = Math.max(...data.map((d) => d.xtool + d.xdesign + d.xcreator));
+  const height = 160;
 
   return (
-    <div className="relative h-45 w-full">
-      <div className="flex h-full items-end justify-between gap-2 px-2">
-        {usageData.map((data, i) => {
-          const barHeight = (data.value / maxVal) * height;
+    <div className="relative h-60 w-full">
+      <div className="flex h-full items-end justify-between gap-3 px-2">
+        {data.map((item, i) => {
+          const totalValue = item.xtool + item.xdesign + item.xcreator;
+          const xtoolHeight = (item.xtool / maxVal) * height;
+          const xdesignHeight = (item.xdesign / maxVal) * height;
+          const xcreatorHeight = (item.xcreator / maxVal) * height;
+
           return (
-            <div key={data.day} className="group relative flex flex-1 flex-col items-center gap-2">
-              <div
-                className="w-full rounded-t-lg bg-primary/20 transition-all duration-300 group-hover:bg-primary/40"
-                style={{ height: `${barHeight}px` }}
-              >
+            <div key={item.label} className="group relative flex flex-1 flex-col items-center gap-2">
+              <div className="relative w-full flex flex-col-reverse items-center">
                 <div
-                  className="absolute bottom-0 left-0 h-1 w-full rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ bottom: `${barHeight}px` }}
+                  className="w-full rounded-t-sm bg-blue-500/80 transition-all duration-300 group-hover:bg-blue-500"
+                  style={{ height: `${xtoolHeight}px` }}
+                />
+                <div
+                  className="w-full bg-purple-500/80 transition-all duration-300 group-hover:bg-purple-500"
+                  style={{ height: `${xdesignHeight}px` }}
+                />
+                <div
+                  className="w-full rounded-t-lg bg-orange-500/80 transition-all duration-300 group-hover:bg-orange-500"
+                  style={{ height: `${xcreatorHeight}px` }}
                 />
               </div>
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                {data.day}
+                {item.label}
               </span>
               {/* Tooltip */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[10px] font-bold text-background opacity-0 transition-opacity group-hover:opacity-100">
-                {data.value}
+              <div className="absolute -top-24 left-1/2 -translate-x-1/2 z-20 w-32 rounded-xl border border-border bg-background/95 p-2 text-[10px] shadow-xl backdrop-blur-sm opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-top-28 pointer-events-none">
+                <div className="space-y-1.5">
+                  <p className="font-bold border-bottom pb-1 mb-1 border-border/50">{item.label} Usage</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      <span className="text-muted-foreground">XTool</span>
+                    </div>
+                    <span className="font-mono font-bold">{item.xtool}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                      <span className="text-muted-foreground">XDesign</span>
+                    </div>
+                    <span className="font-mono font-bold">{item.xdesign}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                      <span className="text-muted-foreground">XCreator</span>
+                    </div>
+                    <span className="font-mono font-bold">{item.xcreator}</span>
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -133,6 +194,7 @@ const ModuleUsageGraph = () => {
     </div>
   );
 };
+
 
 const RecentActivity = () => {
   return (
@@ -165,7 +227,11 @@ const CreatorDashboard = ({
   initialIsDeveloper,
   credits,
 }: CreatorDashboardProps) => {
+  const [selectedTimeframe, setSelectedTimeframe] = useState<keyof typeof usageData>("daily");
+
   const rootRef = useRef<HTMLDivElement | null>(null);
+
+
   const realtimeCredits = useRealtimeCredits({
     initialCredits: credits ?? null,
     isDeveloper: Boolean(initialIsDeveloper),
@@ -289,17 +355,43 @@ const CreatorDashboard = ({
             <div>
               <h2 className="text-lg font-semibold">Module usage</h2>
               <p className="text-sm text-muted-foreground">
-                Weekly activity across all active modules.
+                Activity across XTool, XDesign, and XCreator.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-500">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                +12% from last week
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mr-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">XTool</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-purple-500" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">XDesign</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-orange-500" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">XCreator</span>
+                </div>
+              </div>
+              <div className="flex items-center p-1 bg-muted/50 rounded-lg border border-border/50">
+                {(["daily", "monthly", "yearly"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTimeframe(t)}
+                    className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${
+                      selectedTimeframe === t
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <ModuleUsageGraph />
+          <ModuleUsageGraph timeframe={selectedTimeframe} />
+
         </div>
 
         <div className="rounded-3xl border bg-card/70 p-6 shadow-sm">

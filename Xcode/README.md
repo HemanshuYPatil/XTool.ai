@@ -1,133 +1,182 @@
 # Xcode CLI
 
-## Global install
+Xcode is a terminal-native, agentic programming CLI that orchestrates file I O, edits, directory listing, and command execution through OpenRouter-backed models. It ships as a standalone package inside this repo and is designed for global installation.
+
+## Global Install
 
 ```bash
 npm install -g @xtool.ai/xcode
 ```
 
-This CLI is designed to be installed globally so the `xcode` command is available on your PATH.
+## Capability Summary
 
-Agentic programming CLI for terminal-first workflows. Xcode is a tool-driven assistant that can read, write, edit, and reason over files to help you build software faster.
-
-## Why Xcode
-
-- **Tool-first**: Built to wire up file I/O, editing, and command execution tools.
-- **Composable**: Add your own commands and sub-tools as the CLI grows.
-- **Terminal-native**: Runs anywhere Node.js runs.
-
-## Install
-
-```bash
-npm install -g @xtool.ai/xcode
-```
-
-## Quick start
-
-```bash
-xcode init
-xcode
-```
-
-Then ask it to do work in your repo.
+| Capability | Description |
+| --- | --- |
+| Interactive agent | Multi-turn session with tool calling. |
+| Workspace config | Per-project or global model configuration. |
+| Tool execution | Read, write, edit, list, run commands with confirmation. |
+| Usage tracking | Request and token totals persisted per user. |
+| Model selection | Curated model list with interactive picker. |
 
 ## Commands
 
-- `help` - Show CLI usage
-- `init` - Initialize a workspace config in the current folder
-- `model` - Show or set the active model
-- `plan` - Generate a concise plan for a task
-- `usage` - Show usage totals for this session
+| Command | Purpose |
+| --- | --- |
+| `xcode` | Start interactive session. |
+| `xcode help` | Display CLI help. |
+| `xcode init` | Create workspace config in `.xcode/config.json`. |
+| `xcode model` | Show the current model. |
+| `xcode model list` | List supported models. |
+| `xcode model set NAME` | Set model (use `--global` for user scope). |
+| `xcode plan TASK` | Generate a concise plan for a task. |
+| `xcode usage` | Show usage totals for this session and lifetime. |
 
-## Interactive session
+## Slash Commands (Interactive)
 
-Run `xcode` without arguments to enter interactive mode.
-
-Slash commands inside the session:
-
-- `/help`
-- `/model`
-- `/plan <task>`
-- `/usage`
-- `/exit`
+| Slash Command | Purpose |
+| --- | --- |
+| `/help` | Help text. |
+| `/model` | Model picker. |
+| `/plan <task>` | Generate a short plan. |
+| `/usage` | Show usage totals. |
+| `/exit` | Exit session. |
 
 ## Models
 
-Available models (OpenRouter):
+| Rank | Label | Model ID |
+| --- | --- | --- |
+| 1 | Xcode 3 Pro | `openai/gpt-4.1-mini` |
+| 2 | Xcode 2.5 Flash | `openai/gpt-4o-mini` |
+| 3 | Xcode 2.5 Core | `qwen/qwen-2.5-7b-instruct` |
+| 4 | Xcode 2 Lite | `mistralai/mistral-small-latest` |
 
-- `moonshotai/kimi-k2:free`
-- `google/gemma-3-12b-it:free`
-- `qwen/qwen3-4b:free`
-- `meta-llama/llama-3.2-3b-instruct:free`
-- `google/gemma-3-4b-it:free`
-- `google/gemma-3n-e4b-it:free`
-- `google/gemma-3n-e2b-it:free`
+Default model: `openai/gpt-4.1-mini`
 
-Note: many free models do not support tool use on OpenRouter. If you see a tool-use error,
-switch to a tools-capable model (for example: `openai/gpt-4o-mini`, `openai/gpt-4.1-mini`,
-`anthropic/claude-3.5-sonnet`).
+## Tooling Surface
 
-Set the model:
-
-```bash
-xcode model set moonshotai/kimi-k2:free
-```
-
-Set globally:
-
-```bash
-xcode model set moonshotai/kimi-k2:free --global
-```
-
-## API key
-
-Xcode uses OpenRouter. Provide an API key via environment variable or `.env`:
-
-```
-OPENROUTER_API_KEY=your_key_here
-```
-
-## Tools
-
-The agent can call tools during a session:
-
-- `read_file`
-- `write_file`
-- `edit_file` (find/replace)
-- `list_dir`
-- `run_command` (asks for confirmation by default)
+| Tool | Purpose | Notes |
+| --- | --- | --- |
+| `read_file` | Read file contents. | Optional byte limit. |
+| `write_file` | Write content to disk. | Respects overwrite flag. |
+| `edit_file` | Find and replace text. | Single or global replacement. |
+| `list_dir` | List directory contents. | Configurable depth. |
+| `run_command` | Execute shell commands. | Prompts if execution is not allowed. |
 
 ## Configuration
 
-`xcode init` creates a `.xcode/config.json` in your project. You can also store a global config in `~/.xcode/config.json`.
+| Scope | Path | Resolution Order |
+| --- | --- | --- |
+| Workspace | `.xcode/config.json` | First priority. |
+| Global | `~/.xcode/config.json` | Second priority. |
+| Default | In-memory defaults | Used when no config exists. |
 
-## Roadmap
+Configuration fields:
 
-- [ ] Patch-based editing tool
-- [ ] Multi-step task planner
-- [ ] Workspace tool permissions UI
-- [ ] Richer tool tracing and logs
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `model` | string | OpenRouter model identifier. |
+| `allowExec` | boolean | Enable or require approval for `run_command`. |
+
+## Environment Variables
+
+| Variable | Purpose |
+| --- | --- |
+| `OPENROUTER_API_KEY` | Required for model access. |
+| `XCODE_CELL_ASPECT` | Optional aspect ratio tuning for banner rendering. |
+| `XCODE_IMAGE_PROTOCOL` | Optional protocol override for inline images. |
+
+The CLI loads environment variables from:
+
+- Project `.env` (current working directory)
+- Global `~/.xcode/.env`
+
+## Execution Flows
+
+### Startup and Session Initialization
+
+| Step | Outcome |
+| --- | --- |
+| Load API key | Reads environment and `.env` files. |
+| Load config | Resolves workspace then global config. |
+| Load usage | Reads `~/.xcode/usage.json`. |
+| Launch UI | Starts Ink session and input loop. |
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant CLI
+  participant FS as File System
+  participant OpenRouter
+
+  User->>CLI: Start `xcode`
+  CLI->>FS: Load .env and config
+  CLI->>FS: Load usage.json
+  CLI->>OpenRouter: Ready for model calls
+  CLI-->>User: Interactive session
+```
+
+### Agent Loop and Tool Calling
+
+| Step | Outcome |
+| --- | --- |
+| Compose messages | System prompt plus user history. |
+| Call model | OpenRouter chat completions. |
+| Execute tools | Run tool calls and capture output. |
+| Iterate | Up to 6 iterations before fallback. |
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant CLI
+  participant Model as OpenRouter
+  participant Tools
+
+  User->>CLI: Send prompt
+  CLI->>Model: Send messages + tools
+  Model-->>CLI: Tool calls
+  CLI->>Tools: Execute tools
+  Tools-->>CLI: Tool output
+  CLI->>Model: Provide tool results
+  Model-->>CLI: Final response
+  CLI-->>User: Render assistant output
+```
+
+### Command Execution Confirmation
+
+| Step | Outcome |
+| --- | --- |
+| Tool request | Model requests `run_command`. |
+| Confirmation | User approves or denies command. |
+| Execution | Command runs if approved. |
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant CLI
+  participant Shell
+
+  CLI->>User: Allow command execution prompt
+  alt Approved
+    User->>CLI: Approve
+    CLI->>Shell: Execute command
+    Shell-->>CLI: Output
+    CLI-->>User: Command result
+  else Denied
+    User->>CLI: Deny
+    CLI-->>User: Command execution blocked
+  end
+```
 
 ## Development
 
-Clone and install dependencies:
-
 ```bash
-git clone <your-repo-url>
-cd XTool.AI/Xcode
+cd Xcode
 npm install
-```
-
-Run locally:
-
-```bash
 node bin/xcode.js
 ```
 
-## Contributing
+## Notes
 
-Issues and PRs are welcome. Please open a discussion for major changes before submitting a PR.
-
-## License
-
-MIT
+- The CLI targets OpenRouter chat completions (`/api/v1/chat/completions`).
+- Usage totals persist at `~/.xcode/usage.json` across sessions.
+- Command execution can be restricted by setting `allowExec` to `false`.
