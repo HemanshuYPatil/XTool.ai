@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useConvex } from "convex/react";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { api } from "@/convex/_generated/api";
 import { BellIcon } from "lucide-react";
@@ -14,21 +14,54 @@ const STORAGE_KEY = "xtool:lastSeenNotificationAt";
 
 export const NotificationBell = () => {
   const { user } = useKindeBrowserClient();
-  const queryArgs = useMemo(
-    () => (user?.id ? { limit: 20 } : "skip"),
-    [user?.id]
-  );
-  const data = useQuery(api.realtime.getUserCreditTransactions, queryArgs);
-  const [listItems, setListItems] = useState<typeof data | null>(null);
+  const convex = useConvex();
+  const [listItems, setListItems] = useState<
+    | {
+        _id: string;
+        amount: number;
+        reason: string;
+        modelTokens?: number | null;
+        promptTokens?: number | null;
+        completionTokens?: number | null;
+        details?: { amount: number; reason: string; modelTokens?: number }[] | null;
+        createdAt: number;
+      }[]
+    | undefined
+  >(undefined);
+
   useEffect(() => {
-    if (data !== undefined) {
-      setListItems(data);
+    let cancelled = false;
+    if (!user?.id) {
+      setListItems([]);
+      return;
     }
-  }, [data]);
+
+    setListItems(undefined);
+    convex
+      .query(api.realtime.getUserCreditTransactions, { limit: 20 })
+      .then((result) => {
+        if (!cancelled) {
+          setListItems(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setListItems([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, user?.id]);
+
   const latestCreatedAt = useMemo(() => {
-    if (!data || data.length === 0) return null;
-    return data.reduce((latest, item) => Math.max(latest, item.createdAt), 0);
-  }, [data]);
+    if (!listItems || listItems.length === 0) return null;
+    return listItems.reduce(
+      (latest, item) => Math.max(latest, item.createdAt),
+      0
+    );
+  }, [listItems]);
 
   const [lastSeen, setLastSeen] = useState<number>(0);
   const [open, setOpen] = useState(false);

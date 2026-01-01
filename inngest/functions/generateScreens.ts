@@ -29,6 +29,7 @@ import {
   recordCreditSummary,
   deductCredits,
 } from "@/lib/credits";
+import { buildCreditReason } from "@/lib/credit-reason";
 import {
   publishFrame,
   publishProjectStatus,
@@ -74,6 +75,7 @@ const model = openrouterAi(OPENROUTER_MODEL_ID);
 type CreditFailure = { creditFailure: true; message: string };
 const isCreditFailure = (value: unknown): value is CreditFailure =>
   Boolean((value as CreditFailure | undefined)?.creditFailure);
+const PLACEHOLDER_PROJECT_NAME = "Q model";
 
 export const generateScreens = inngest.createFunction(
   { id: "generate-ui-screens" },
@@ -87,7 +89,20 @@ export const generateScreens = inngest.createFunction(
       frames,
       theme: existingTheme,
       isDeveloper,
+      projectName: eventProjectName,
     } = event.data;
+    let projectName = (eventProjectName ?? null) as string | null;
+    const resolveProjectName = async () => {
+      if (projectName && projectName !== PLACEHOLDER_PROJECT_NAME) {
+        return projectName;
+      }
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, userId },
+        select: { name: true },
+      });
+      projectName = project?.name ?? projectName ?? null;
+      return projectName;
+    };
     const isExistingGeneration = Array.isArray(frames) && frames.length > 0;
     const creditSummary = {
       totalAmount: 0,
@@ -123,10 +138,12 @@ export const generateScreens = inngest.createFunction(
       if (summaryPublished || isDeveloper) return;
       if (!creditSummary.totalAmount) return;
       summaryPublished = true;
+      const resolvedProjectName = await resolveProjectName();
       await recordCreditSummary({
         kindeId: userId,
         amount: creditSummary.totalAmount,
         reason: "screens.generate",
+        projectName: resolvedProjectName,
         modelTokens: creditSummary.totalTokens || undefined,
         promptTokens: creditSummary.totalPromptTokens || undefined,
         completionTokens: creditSummary.totalCompletionTokens || undefined,
@@ -136,11 +153,12 @@ export const generateScreens = inngest.createFunction(
     };
     const updateRealtimeSummary = async () => {
       if (isDeveloper || !creditSummary.totalAmount) return;
+      const resolvedProjectName = await resolveProjectName();
       await publishCreditSummaryUpdate({
         userId,
         transactionId: summaryId,
         amount: creditSummary.totalAmount,
-        reason: "screens.generate",
+        reason: buildCreditReason("screens.generate", resolvedProjectName),
         modelTokens: creditSummary.totalTokens || undefined,
         promptTokens: creditSummary.totalPromptTokens || undefined,
         completionTokens: creditSummary.totalCompletionTokens || undefined,

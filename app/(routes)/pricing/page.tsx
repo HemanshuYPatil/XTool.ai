@@ -5,20 +5,20 @@ const packs = [
   {
     name: "Starter",
     price: "$9",
-    credits: "1,000 credits",
-    description: "For quick explorations and small batches.",
+    credits: "450 credits",
+    description: "Great for quick explorations and small batches.",
   },
   {
     name: "Builder",
     price: "$29",
-    credits: "4,000 credits",
+    credits: "1,800 credits",
     description: "Ideal for regular design iterations.",
     highlight: true,
   },
   {
     name: "Studio",
     price: "$99",
-    credits: "15,000 credits",
+    credits: "7,200 credits",
     description: "For teams running heavy AI workflows.",
   },
 ];
@@ -40,6 +40,9 @@ const PricingPage = async () => {
             </h1>
             <p className="text-foreground/80 max-w-2xl mx-auto text-base sm:text-lg">
               Buy credits and use them across XDesign AI generation.
+            </p>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Example: ~750 tokens ≈ 15 credits per screen
             </p>
           </div>
         </div>

@@ -68,20 +68,22 @@ Bring the power of XTool.ai to your local terminal. Sync projects, generate code
 
 Choose the plan that best fits your needs. All plans include access to our core AI features.
 
-| Feature | Free | Pro | XTREME |
-| :--- | :--- | :--- | :--- |
-| Daily Credits | 10 | 100 | Unlimited |
-| AI Models | Basic | Advanced | All Models |
-| XDesign | Limited | Full Access | Priority |
-| XCreator | Basic Tools | All Tools | Priority |
-| Support | Community | Email | 24/7 Priority |
-| Price | $0/mo | $29/mo | $99/mo |
-
 ## Credit Usage
 Different tasks consume different amounts of credits:
 - **UI Generation**: 5 credits per screen.
 - **Image Clipping**: 1 credit per image.
 - **Video Highlights**: 10 credits per minute.
+
+## Credit Packs (one-time)
+| Pack | Price | Credits | Typical use |
+| :--- | :--- | :--- | :--- |
+| Starter | $9 | 450 | Quick experiments |
+| Builder | $29 | 1,800 | Regular iteration |
+| Studio | $99 | 7,200 | Heavy workflows |
+
+## Example
+If a screen uses ~750 tokens, that is about **15 credits** at the launch rate.  
+So a 4-screen project uses ~60 credits.
     `
   },
   billing: {

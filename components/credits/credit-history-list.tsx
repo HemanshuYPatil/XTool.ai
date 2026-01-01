@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { splitCreditReason } from "@/lib/credit-reason";
 
 type CreditHistoryItem = {
   id: string;
@@ -99,6 +100,10 @@ export const CreditHistoryList = ({
     () => (selected ? buildTokenSplit(selected) : null),
     [selected]
   );
+  const selectedReason = useMemo(
+    () => (selected ? splitCreditReason(selected.reason) : null),
+    [selected]
+  );
 
   if (!transactions.length) {
     return (
@@ -110,24 +115,34 @@ export const CreditHistoryList = ({
 
   return (
     <>
-      {transactions.map((tx) => (
-        <button
-          key={tx.id}
-          type="button"
-          onClick={() => setSelected(tx)}
-          className="grid w-full grid-cols-3 items-center text-left transition-colors hover:bg-muted/40"
-        >
-          <div className="px-6 py-4 font-medium">
-            {toDate(tx.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </div>
-          <div className="px-6 py-4 font-medium">{tx.reason}</div>
-          <div className="px-6 py-4 text-right font-medium">{tx.amount}</div>
-        </button>
-      ))}
+      {transactions.map((tx) => {
+        const { baseReason, projectName } = splitCreditReason(tx.reason);
+        return (
+          <button
+            key={tx.id}
+            type="button"
+            onClick={() => setSelected(tx)}
+            className="grid w-full grid-cols-3 items-center text-left transition-colors hover:bg-muted/40"
+          >
+            <div className="px-6 py-4 font-medium">
+              {toDate(tx.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
+            <div className="px-6 py-4 font-medium">
+              <div>{baseReason}</div>
+              {projectName ? (
+                <div className="text-xs text-muted-foreground">
+                  Project: {projectName}
+                </div>
+              ) : null}
+            </div>
+            <div className="px-6 py-4 text-right font-medium">{tx.amount}</div>
+          </button>
+        );
+      })}
 
       <Dialog open={Boolean(selected)} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-2xl">
@@ -157,7 +172,9 @@ export const CreditHistoryList = ({
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Reason
                   </p>
-                  <p className="mt-2 text-sm font-semibold">{selected.reason}</p>
+                  <p className="mt-2 text-sm font-semibold">
+                    {selectedReason?.baseReason ?? selected.reason}
+                  </p>
                 </div>
               </div>
 
@@ -236,6 +253,16 @@ export const CreditHistoryList = ({
                       </div>
                     ))}
                   </div>
+                </div>
+              ) : null}
+              {selectedReason?.projectName ? (
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Project
+                  </p>
+                  <p className="mt-2 text-sm font-semibold">
+                    {selectedReason.projectName}
+                  </p>
                 </div>
               ) : null}
             </div>

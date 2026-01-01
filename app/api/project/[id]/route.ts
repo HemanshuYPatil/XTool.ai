@@ -96,6 +96,7 @@ export async function POST(
           frames: project.frames,
           theme: project.theme,
           isDeveloper: isDev,
+          projectName: project.name,
         },
       });
     } catch (error) {

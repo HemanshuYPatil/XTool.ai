@@ -579,11 +579,11 @@ const Header = ({
                     </p>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {[
                       { id: "html", label: "HTML", icon: GlobeIcon },
                       { id: "react", label: "React", icon: Code2Icon },
-                      { id: "react-native", label: "React Native", icon: SmartphoneIcon },
+                      { id: "react-native", label: "Native", icon: SmartphoneIcon },
                       { id: "flutter", label: "Flutter", icon: SmartphoneIcon },
                       { id: "nextjs", label: "Next.js", icon: Code2Icon },
                       { id: "svelte", label: "Svelte", icon: LayersIcon },
@@ -598,19 +598,26 @@ const Header = ({
                           type="button"
                           onClick={() => setExportTarget(item.id as ExportTarget)}
                           className={cn(
-                            "flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all",
+                            "flex flex-col items-center justify-center gap-2 rounded-2xl border p-4 transition-all group relative",
                             selected
-                              ? "border-primary/60 bg-primary/5 text-primary"
-                              : "border-border/60 hover:border-primary/30 hover:bg-muted/40"
+                              ? "border-primary bg-primary/5 text-primary shadow-sm ring-1 ring-primary/20"
+                              : "border-border/50 bg-card/50 hover:border-primary/30 hover:bg-muted/50"
                           )}
                         >
-                          <span className="flex items-center gap-3 text-sm font-semibold">
-                            <item.icon className="size-4" />
+                          <div className={cn(
+                            "p-2 rounded-xl transition-colors",
+                            selected ? "bg-primary/10" : "bg-muted/50 group-hover:bg-primary/5"
+                          )}>
+                            <item.icon className={cn("size-5", selected ? "text-primary" : "text-muted-foreground group-hover:text-primary/70")} />
+                          </div>
+                          <span className="text-[11px] font-bold tracking-tight">
                             {item.label}
                           </span>
-                          <span className={cn("text-[10px] font-bold uppercase tracking-wider", selected ? "text-primary" : "text-muted-foreground")}>
-                            {selected ? "Selected" : "Select"}
-                          </span>
+                          {selected && (
+                            <div className="absolute top-2 right-2">
+                              <div className="size-1.5 rounded-full bg-primary animate-pulse" />
+                            </div>
+                          )}
                         </button>
                       );
                     })}
