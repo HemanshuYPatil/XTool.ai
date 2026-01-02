@@ -349,6 +349,9 @@ sequenceDiagram
 | `OPENROUTER_API_KEY` | OpenRouter API access for AI calls. |
 | `OPENROUTER_MODEL_FALLBACKS` | Optional model fallback list. |
 | `OPENROUTER_PROJECT_NAME_MODEL` | Optional model override for project naming. |
+| `MCP_DOCS_SERVER_URL` | MCP docs server URL (for docs chat grounding). |
+| `MCP_DOCS_PORT` | MCP docs server port (docs server only). |
+| `MCP_DOCS_ROOT` | MCP docs root path (docs server only). |
 | `CONVEX_URL` | Convex HTTP endpoint. |
 | `CONVEX_SERVER_SECRET` | Convex mutation authorization. |
 | `NEXT_PUBLIC_CONVEX_URL` | Client-side Convex endpoint. |
@@ -390,6 +393,12 @@ Start background services:
 ```bash
 npx inngest-cli@latest dev
 npx convex dev
+```
+
+Start the MCP docs server (required for docs chat):
+
+```bash
+npm run mcp:docs
 ```
 
 ## Scripts
