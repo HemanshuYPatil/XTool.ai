@@ -119,6 +119,8 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
         <div className="mt-auto border-t pt-4 px-2 space-y-1">
           <Link
             href="/docs"
+            target="_blank"
+            rel="noreferrer"
             className={cn(
               "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground",
               isCollapsed && "justify-center px-0"
@@ -133,6 +135,8 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
 
           <Link
             href="/pricing"
+            target="_blank"
+            rel="noreferrer"
             className={cn(
               "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground",
               isCollapsed && "justify-center px-0"

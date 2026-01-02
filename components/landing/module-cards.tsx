@@ -9,7 +9,6 @@ import {
   PaletteIcon, 
   ArrowUpRightIcon,
   SparklesIcon,
-  TerminalIcon,
   LayersIcon
 } from "lucide-react";
 
@@ -40,6 +39,14 @@ const modules = [
     bg: "bg-emerald-500/10",
     href: "/xtool/module-xdesign",
     features: ["AI UI Generation", "Interactive Mockups", "Design Systems"]
+  },
+  {
+    title: "Coming Soon",
+    description: "New tools are coming soon.",
+    icon: LayersIcon,
+    color: "text-slate-500",
+    bg: "bg-slate-500/10",
+    features: []
   }
 ];
 
@@ -76,20 +83,28 @@ export const ModuleCards = () => {
                 </p>
               </div>
 
-              <ul className="space-y-3 pt-2">
-                {module.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm font-medium text-foreground/80">
-                    <SparklesIcon className="size-3 text-primary" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+              {module.features.length > 0 ? (
+                <ul className="space-y-3 pt-2">
+                  {module.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm font-medium text-foreground/80">
+                      <SparklesIcon className="size-3 text-primary" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
-              <Button asChild variant="ghost" className="w-full justify-between rounded-xl h-12 px-6 group/btn hover:bg-primary/10 hover:text-primary">
-                <Link href={module.href}>
-                  Launch Module <ArrowUpRightIcon className="size-4 transition-transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
-                </Link>
-              </Button>
+              {module.href ? (
+                <Button asChild variant="ghost" className="w-full justify-between rounded-xl h-12 px-6 group/btn hover:bg-primary/10 hover:text-primary">
+                  <Link href={module.href}>
+                    Launch Module <ArrowUpRightIcon className="size-4 transition-transform group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="ghost" className="w-full justify-between rounded-xl h-12 px-6" disabled>
+                  Coming soon
+                </Button>
+              )}
             </div>
           </Card>
         ))}

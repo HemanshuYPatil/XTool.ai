@@ -1,102 +1,90 @@
 "use client";
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { CheckIcon, ZapIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-const packs = [
+import React from "react";
+import Link from "next/link";
+import { Check } from "lucide-react";
+
+const plans = [
   {
     name: "Starter",
     price: "$9",
-    description: "Great for small batches of AI generation.",
-    features: ["1,000 credits", "Email support", "Standard generation"],
-    cta: "Buy Starter",
-    popular: false,
+    description: "Perfect for hobbyists.",
+    features: ["450 credits", "Basic tools access", "Community support"],
   },
   {
     name: "Builder",
     price: "$29",
-    description: "Best value for ongoing design work.",
-    features: ["4,000 credits", "Priority generation", "Team sharing"],
-    cta: "Buy Builder",
     popular: true,
+    description: "For serious builders.",
+    features: ["1,800 credits", "All tools access", "Priority support", "Export to React"],
   },
   {
     name: "Studio",
     price: "$99",
-    description: "High-volume credits for product teams.",
-    features: ["15,000 credits", "Fastest generation", "Dedicated support"],
-    cta: "Buy Studio",
-    popular: false,
+    description: "For professional teams.",
+    features: ["7,200 credits", "Team collaboration", "Dedicated support", "API Access"],
   },
 ];
 
 export const Pricing = () => {
   return (
-    <section id="pricing" className="py-24 px-6 max-w-7xl mx-auto">
-      <div className="text-center mb-16 space-y-4">
-        <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
-          Credit Packs
-        </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Buy credits and use them across XTool.ai AI workflows.
-        </p>
-      </div>
+    <section className="py-24 bg-background">
+      <div className="container px-4 md:px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+            Simple, transparent pricing
+          </h2>
+          <p className="text-muted-foreground">
+            Choose the plan that fits your needs. No hidden fees.
+          </p>
+        </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
-        {packs.map((pack) => (
-          <div
-            key={pack.name}
-            className={cn(
-              "relative p-8 rounded-[2.5rem] border bg-card/40 backdrop-blur-sm flex flex-col transition-all duration-500",
-              pack.popular ? "ring-2 ring-primary shadow-2xl shadow-primary/10 scale-105 z-10" : "hover:bg-card/60"
-            )}
-          >
-            {pack.popular && (
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
-                Most Popular
-              </div>
-            )}
-
-            <div className="mb-8">
-              <h3 className="text-xl font-bold mb-2">{pack.name}</h3>
-              <div className="flex items-baseline gap-1">
-                <span className="text-4xl font-bold">{pack.price}</span>
-                <span className="text-muted-foreground">one-time</span>
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-                {pack.description}
-              </p>
-            </div>
-
-            <ul className="space-y-4 mb-8 grow">
-              {pack.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-3 text-sm">
-                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <CheckIcon className="size-3 text-primary" />
-                  </div>
-                  <span className="text-foreground/80">{feature}</span>
-                </li>
-              ))}
-            </ul>
-
-            <Button
-              className={cn(
-                "w-full rounded-2xl h-12 text-sm font-bold transition-all duration-300",
-                pack.popular ? "bg-primary shadow-lg shadow-primary/20 hover:opacity-90" : "bg-muted hover:bg-muted/80 text-foreground"
-              )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative rounded-3xl border p-8 flex flex-col ${
+                plan.popular
+                  ? "bg-primary/5 border-primary/50 shadow-lg scale-105 z-10"
+                  : "bg-card border-border hover:border-primary/30 transition-colors"
+              }`}
             >
-              {pack.cta}
-            </Button>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-16 text-center">
-        <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-          <ZapIcon className="size-4 text-primary fill-current" />
-          Credits power every AI experience in XTool.ai
-        </p>
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                  Most Popular
+                </div>
+              )}
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                <div className="mt-2 flex items-baseline">
+                  <span className="text-4xl font-bold">{plan.price}</span>
+                  <span className="ml-1 text-muted-foreground">/one-time</span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {plan.description}
+                </p>
+              </div>
+              <ul className="space-y-3 mb-8 flex-1">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center text-sm">
+                    <Check className="w-4 h-4 text-primary mr-2" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/pricing"
+                className={`w-full inline-flex items-center justify-center rounded-full py-2.5 text-sm font-semibold transition-colors ${
+                  plan.popular
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
+              >
+                Choose {plan.name}
+              </Link>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -10,8 +10,7 @@ const footerLinks = [
     links: [
       { name: "XCreator", href: "/xtool/module-xcreator" },
       { name: "XCode", href: "/xtool/module-xcode" },
-      { name: "XDesign", href: "/xtool/module-xdesign" },
-      { name: "Pricing", href: "#pricing" }
+      { name: "XDesign", href: "/xtool/module-xdesign" }
     ]
   },
   {
