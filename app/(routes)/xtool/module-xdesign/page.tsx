@@ -1,6 +1,7 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { isDeveloper } from "@/lib/developers";
 import { ensureUserCredits } from "@/lib/credits";
+import { recordModuleUsage } from "@/lib/module-usage";
 import { CreatorLayout } from "@/components/creator/creator-layout";
 import LandingSection from "@/app/(routes)/_common/landing-section";
 
@@ -12,6 +13,7 @@ export default async function XDesignModulePage() {
   if (user) {
     const userCredits = await ensureUserCredits(user.id);
     initialCredits = userCredits.credits;
+    await recordModuleUsage({ userId: user.id, module: "XDESIGN" });
   }
 
   return (

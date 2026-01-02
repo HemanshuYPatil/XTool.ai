@@ -60,6 +60,7 @@ export async function POST(
         theme: project.theme,
         frame: frame,
         isDeveloper: isDev,
+        projectName: project.name,
       },
     });
 

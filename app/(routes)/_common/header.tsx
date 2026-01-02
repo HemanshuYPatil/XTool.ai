@@ -29,6 +29,10 @@ type HeaderProps = {
   isDeveloper?: boolean;
 };
 
+import { usePathname } from "next/navigation";
+
+
+
 const Header = ({
   initialUser,
   initialCredits,
@@ -36,34 +40,47 @@ const Header = ({
 }: HeaderProps) => {
   const { theme, setTheme } = useTheme();
   const { user } = useKindeBrowserClient();
+  const pathname = usePathname();
   const resolvedUser = user ?? initialUser;
   const isDark = theme === "dark";
 
+  const isActive = (path: string) => pathname === path;
+
   return (
     <div className="sticky top-0 right-0 left-0 z-30">
-      <header className="h-16 border-b bg-background py-4">
+      <header className="h-16 border-b bg-background/80 backdrop-blur-md py-4 transition-all">
         <div
           className="w-full max-w-6xl mx-auto
-         flex items-center justify-between"
+         flex items-center justify-between px-6"
         >
           <Logo />
 
           <div
             className="hidden flex-1 items-center
-          justify-center gap-8 md:flex"
+          justify-center gap-2 md:flex"
           >
-            <Link
-              href="/"
-              className="rounded-full px-3 py-1.5 text-foreground-muted text-sm transition-colors hover:bg-muted/70 hover:text-foreground"
-            >
-              Home
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-full px-3 py-1.5 text-foreground-muted text-sm transition-colors hover:bg-muted/70 hover:text-foreground"
-            >
-              Credits
-            </Link>
+            {[
+              { name: "Home", href: "/" },
+              { name: "Explore", href: "/explore" },
+              { name: "Docs", href: "/docs" },
+              { name: "Credits", href: "/pricing" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "relative rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-300",
+                  isActive(link.href)
+                    ? "text-primary bg-primary/10 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                {link.name}
+                {isActive(link.href) && (
+                  <span className="absolute inset-0 rounded-full ring-1 ring-primary/20 pointer-events-none" />
+                )}
+              </Link>
+            ))}
           </div>
 
           <div

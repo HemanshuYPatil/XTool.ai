@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { isDeveloper } from "@/lib/developers";
+import { buildCreditReason } from "@/lib/credit-reason";
 import {
   publishCreditSummaryUpdate,
   publishCreditTransaction,
@@ -8,8 +9,18 @@ import {
 
 export const INITIAL_CREDITS = 200;
 export const PROJECT_CREATION_COST = 50;
-export const MIN_PROMPT_CREDITS = 10;
-export const TOKENS_PER_CREDIT = 10;
+const readPositiveInt = (value: string | undefined, fallback: number) => {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+export const MIN_PROMPT_CREDITS = readPositiveInt(
+  process.env.MIN_PROMPT_CREDITS,
+  2
+);
+export const TOKENS_PER_CREDIT = readPositiveInt(
+  process.env.TOKENS_PER_CREDIT,
+  50
+);
 
 type UsageLike = {
   totalTokens?: number;
@@ -55,11 +66,13 @@ export const calculateTokenCost = (usageTokens: number) => {
 export const reserveMinimumCredits = async ({
   kindeId,
   reason,
+  projectName,
   publishRealtime = true,
   recordTransaction = true,
 }: {
   kindeId: string;
   reason: string;
+  projectName?: string | null;
   publishRealtime?: boolean;
   recordTransaction?: boolean;
 }) =>
@@ -67,6 +80,7 @@ export const reserveMinimumCredits = async ({
     kindeId,
     amount: MIN_PROMPT_CREDITS,
     reason,
+    projectName,
     publishRealtime,
     recordTransaction,
   });
@@ -78,6 +92,7 @@ export const settleUsageCharge = async ({
   completionTokens,
   minimumCharged = MIN_PROMPT_CREDITS,
   reason,
+  projectName,
   publishRealtime = true,
   recordTransaction = true,
 }: {
@@ -87,6 +102,7 @@ export const settleUsageCharge = async ({
   completionTokens?: number;
   minimumCharged?: number;
   reason: string;
+  projectName?: string | null;
   publishRealtime?: boolean;
   recordTransaction?: boolean;
 }) => {
@@ -99,6 +115,7 @@ export const settleUsageCharge = async ({
     kindeId,
     amount: extra,
     reason,
+    projectName,
     modelTokens: usageTokens,
     promptTokens,
     completionTokens,
@@ -147,6 +164,7 @@ export const deductCredits = async ({
   kindeId,
   amount,
   reason,
+  projectName,
   modelTokens,
   promptTokens,
   completionTokens,
@@ -156,6 +174,7 @@ export const deductCredits = async ({
   kindeId: string;
   amount: number;
   reason: string;
+  projectName?: string | null;
   modelTokens?: number;
   promptTokens?: number;
   completionTokens?: number;
@@ -165,6 +184,7 @@ export const deductCredits = async ({
   if (amount <= 0) {
     return { ok: true, credits: null };
   }
+  const formattedReason = buildCreditReason(reason, projectName);
   const developer = await isDeveloper(kindeId);
   if (developer) {
     return { ok: true, credits: null };
@@ -189,7 +209,7 @@ export const deductCredits = async ({
             data: {
               userId: kindeId,
               amount: -amount,
-              reason,
+              reason: formattedReason,
               modelTokens,
             },
             select: {
@@ -234,12 +254,14 @@ export const chargeForUsage = async ({
   kindeId,
   usage,
   reason,
+  projectName,
   publishRealtime = true,
   recordTransaction = true,
 }: {
   kindeId: string;
   usage?: UsageLike | null;
   reason: string;
+  projectName?: string | null;
   publishRealtime?: boolean;
   recordTransaction?: boolean;
 }) => {
@@ -249,6 +271,7 @@ export const chargeForUsage = async ({
     kindeId,
     amount,
     reason,
+    projectName,
     modelTokens: totalTokens,
     promptTokens: usage?.promptTokens ?? usage?.prompt_tokens,
     completionTokens: usage?.completionTokens ?? usage?.completion_tokens,
@@ -328,6 +351,7 @@ export const recordCreditSummary = async ({
   kindeId,
   amount,
   reason,
+  projectName,
   modelTokens,
   promptTokens,
   completionTokens,
@@ -337,6 +361,7 @@ export const recordCreditSummary = async ({
   kindeId: string;
   amount: number;
   reason: string;
+  projectName?: string | null;
   modelTokens?: number;
   promptTokens?: number;
   completionTokens?: number;
@@ -345,13 +370,14 @@ export const recordCreditSummary = async ({
 }) => {
   if (amount >= 0) return { ok: true };
   await ensureUserCredits(kindeId);
+  const formattedReason = buildCreditReason(reason, projectName);
   let transaction;
   try {
     transaction = await prisma.creditTransaction.create({
       data: {
         userId: kindeId,
         amount,
-        reason,
+        reason: formattedReason,
         modelTokens,
         details,
       },
@@ -369,7 +395,7 @@ export const recordCreditSummary = async ({
       data: {
         userId: kindeId,
         amount,
-        reason,
+        reason: formattedReason,
         modelTokens,
       },
       select: {

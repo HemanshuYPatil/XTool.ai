@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useConvex, useQuery } from "convex/react";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { api } from "@/convex/_generated/api";
 import { BellIcon, ArrowDownLeftIcon, ArrowUpRightIcon } from "lucide-react";
@@ -11,6 +11,7 @@ import {
   formatCreditsDelta,
   formatNotificationReason,
 } from "@/components/notifications/notification-utils";
+import { splitCreditReason } from "@/lib/credit-reason";
 
 type NotificationsListProps = {
   limit?: number;
@@ -32,30 +33,51 @@ export const NotificationsList = ({
   limit = 20,
   className,
   items,
-  useRealtime = true,
+  useRealtime = false,
 }: NotificationsListProps) => {
   const { user } = useKindeBrowserClient();
+  const convex = useConvex();
+
   const queryArgs = useMemo(
     () =>
       useRealtime && items === undefined && user?.id ? { limit } : "skip",
     [items, limit, useRealtime, user?.id]
   );
   const data = useQuery(api.realtime.getUserCreditTransactions, queryArgs);
-
-  const [cachedData, setCachedData] = useState<typeof data>(undefined);
+  const [staticData, setStaticData] = useState<typeof data>(undefined);
 
   useEffect(() => {
-    if (data && data.length) {
-      setCachedData(data);
+    let cancelled = false;
+    if (!useRealtime && items === undefined) {
+      if (!user?.id) {
+        setStaticData([]);
+        return;
+      }
+      setStaticData(undefined);
+      convex
+        .query(api.realtime.getUserCreditTransactions, { limit })
+        .then((result) => {
+          if (!cancelled) {
+            setStaticData(result);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setStaticData([]);
+          }
+        });
     }
-  }, [data]);
+    return () => {
+      cancelled = true;
+    };
+  }, [convex, items, limit, useRealtime, user?.id]);
 
   const source =
     items !== undefined
       ? items
-      : data && data.length
+      : useRealtime
         ? data
-        : cachedData;
+        : staticData;
 
   const notifications = useMemo(() => {
     if (!source || source.length === 0) return [];
@@ -89,6 +111,7 @@ export const NotificationsList = ({
     <div className={cn("space-y-3", className)}>
       {notifications.map((item) => {
         const isDeduction = item.amount < 0;
+        const { baseReason, projectName } = splitCreditReason(item.reason);
         return (
           <div
             key={item._id}
@@ -108,8 +131,13 @@ export const NotificationsList = ({
             </div>
             <div className="flex-1 space-y-1">
               <p className="text-sm font-semibold">
-                {formatNotificationReason(item.reason)}
+                {projectName}
               </p>
+              {projectName ? (
+                <p className="text-xs text-muted-foreground">
+                   {baseReason}
+                </p>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 {formatCreditsDelta(item.amount)}
               </p>

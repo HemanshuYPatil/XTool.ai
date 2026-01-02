@@ -128,6 +128,7 @@ export async function POST(request: Request) {
     if (!frame) {
       return NextResponse.json({ error: "Frame not found." }, { status: 404 });
     }
+    const projectName = shareLink.project?.name;
 
     let cleanedHtml = "";
 
@@ -191,6 +192,7 @@ export async function POST(request: Request) {
           const minimumCharge = await reserveMinimumCredits({
             kindeId: user.id,
             reason: "contribution.generate.minimum",
+            projectName,
           });
           if (!minimumCharge.ok) {
             throw new Error("NOT_ENOUGH_CREDITS");
@@ -213,6 +215,7 @@ export async function POST(request: Request) {
             promptTokens,
             completionTokens,
             reason: "contribution.generate",
+            projectName,
           });
           if (!settle.ok) {
             throw new Error("NOT_ENOUGH_CREDITS");
@@ -222,6 +225,7 @@ export async function POST(request: Request) {
           const minimumCharge = await reserveMinimumCredits({
             kindeId: user.id,
             reason: "contribution.generate.retry.minimum",
+            projectName,
           });
           if (!minimumCharge.ok) {
             throw new Error("NOT_ENOUGH_CREDITS");
@@ -241,6 +245,7 @@ export async function POST(request: Request) {
             promptTokens,
             completionTokens,
             reason: "contribution.generate.retry",
+            projectName,
           });
           if (!settle.ok) {
             throw new Error("NOT_ENOUGH_CREDITS");

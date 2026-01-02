@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { splitCreditReason } from "@/lib/credit-reason";
 
 type CreditTransactionItem = {
   id: string;
@@ -97,19 +98,29 @@ export const RealtimeCreditTransactionsList = ({
 
   return (
     <>
-      {transactions.map((tx) => (
-        <div key={tx.id} className="grid grid-cols-3 items-center">
-          <div className="px-6 py-4 font-medium">
-            {toDate(tx.createdAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
+      {transactions.map((tx) => {
+        const { baseReason, projectName } = splitCreditReason(tx.reason);
+        return (
+          <div key={tx.id} className="grid grid-cols-3 items-center">
+            <div className="px-6 py-4 font-medium">
+              {toDate(tx.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </div>
+            <div className="px-6 py-4 font-medium">
+              <div>{baseReason}</div>
+              {projectName ? (
+                <div className="text-xs text-muted-foreground">
+                  Project: {projectName}
+                </div>
+              ) : null}
+            </div>
+            <div className="px-6 py-4 text-right font-medium">{tx.amount}</div>
           </div>
-          <div className="px-6 py-4 font-medium">{tx.reason}</div>
-          <div className="px-6 py-4 text-right font-medium">{tx.amount}</div>
-        </div>
-      ))}
+        );
+      })}
     </>
   );
 };

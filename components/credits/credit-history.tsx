@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { splitCreditReason } from "@/lib/credit-reason";
 
 type CreditHistoryItem = {
   _id: string;
@@ -94,15 +95,25 @@ export const CreditHistory = ({
     if (!transactions) return [];
     return (transactions as CreditHistoryItem[])
       .filter(
-        (tx) =>
-          tx.reason.toLowerCase().includes(search.toLowerCase()) ||
-          tx.transactionId.toLowerCase().includes(search.toLowerCase())
+        (tx) => {
+          const { baseReason, projectName } = splitCreditReason(tx.reason);
+          const query = search.toLowerCase();
+          return (
+            baseReason.toLowerCase().includes(query) ||
+            tx.transactionId.toLowerCase().includes(query) ||
+            (projectName ?? "").toLowerCase().includes(query)
+          );
+        }
       )
       .sort((a, b) => b.createdAt - a.createdAt);
   }, [transactions, search]);
 
   const selectedBreakdown = React.useMemo(
     () => (selected ? buildTokenSplit(selected) : null),
+    [selected]
+  );
+  const selectedReason = React.useMemo(
+    () => (selected ? splitCreditReason(selected.reason) : null),
     [selected]
   );
 
@@ -180,6 +191,7 @@ export const CreditHistory = ({
       <div className="grid gap-4">
         {filteredTransactions.map((tx) => {
           const isDeduction = tx.amount < 0;
+          const { baseReason, projectName } = splitCreditReason(tx.reason);
           return (
             <button
               key={tx._id}
@@ -202,13 +214,22 @@ export const CreditHistory = ({
                 </div>
                 <div className="space-y-1 text-left">
                   <h4 className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">
-                    {tx.reason}
+                    {projectName}
                   </h4>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80">
-                    <span className="font-medium" suppressHydrationWarning>{format(tx.createdAt, "MMM d, yyyy • HH:mm")}</span>
+                    <span className="font-medium" suppressHydrationWarning>
+                      {format(tx.createdAt, "MMM d, yyyy HH:mm")}
+                    </span>
                     <span className="size-1 rounded-full bg-border" />
-                    <span className="font-mono uppercase tracking-wider opacity-60 text-[10px]">#{tx.transactionId.slice(-6)}</span>
+                    <span className="font-mono uppercase tracking-wider opacity-60 text-[10px]">
+                      #{tx.transactionId.slice(-6)}
+                    </span>
                   </div>
+                  {projectName ? (
+                    <p className="text-[11px] text-muted-foreground/70">
+                    {baseReason}
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -261,7 +282,9 @@ export const CreditHistory = ({
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Reason
                   </p>
-                  <p className="mt-2 text-sm font-semibold">{selected.reason}</p>
+                  <p className="mt-2 text-sm font-semibold">
+                    {selectedReason?.baseReason ?? selected.reason}
+                  </p>
                 </div>
               </div>
 
@@ -338,6 +361,16 @@ export const CreditHistory = ({
                       </div>
                     ))}
                   </div>
+                </div>
+              ) : null}
+              {selectedReason?.projectName ? (
+                <div className="rounded-2xl border bg-background/60 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Project
+                  </p>
+                  <p className="mt-2 text-sm font-semibold">
+                    {selectedReason.projectName}
+                  </p>
                 </div>
               ) : null}
             </div>

@@ -86,6 +86,7 @@ export async function POST(request: Request) {
           projectId: project.id,
           prompt,
           isDeveloper: isDev,
+          projectName: project.name,
         },
       });
     } catch (error) {

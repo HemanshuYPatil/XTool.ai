@@ -31,6 +31,13 @@ enum ContributionStatus {
   CLOSED
 }
 
+enum ModuleKey {
+  XDESIGN
+  XCODE
+  XCREATOR
+  XTOOL
+}
+
 model User {
   id              String        @id @default(auto()) @map("_id") @db.ObjectId
   kindeId         String        @unique
@@ -42,6 +49,7 @@ model User {
   contributions   Contribution[]
   cliTokens     CliToken[]
   creditTransactions CreditTransaction[]
+  moduleUsageEvents ModuleUsageEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -147,4 +155,16 @@ model CliToken {
   expiresAt DateTime
   lastUsedAt DateTime?
   createdAt DateTime @default(now())
+}
+
+model ModuleUsageEvent {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String
+  user      User      @relation(fields: [userId], references: [kindeId])
+  module    ModuleKey
+  units     Int       @default(1)
+  usedAt    DateTime  @default(now())
+  createdAt DateTime  @default(now())
+
+  @@index([userId, module, usedAt])
 }

@@ -5,6 +5,7 @@ import CreatorDashboard from "@/components/creator/creator-dashboard";
 import { CreatorLayout } from "@/components/creator/creator-layout";
 import { ensureUserFromKinde } from "@/lib/billing";
 import { ensureUserCredits, syncRealtimeCredits } from "@/lib/credits";
+import { getModuleUsageSeries } from "@/lib/module-usage";
 
 export default async function XToolDashboardPage() {
   const session = await getKindeServerSession();
@@ -17,6 +18,10 @@ export default async function XToolDashboardPage() {
   await ensureUserFromKinde(user);
   const userCredits = await ensureUserCredits(user.id);
   await syncRealtimeCredits({ kindeId: user.id });
+  const usageSeries = await getModuleUsageSeries({
+    userId: user.id,
+    module: "XDESIGN",
+  });
   return (
     <CreatorLayout
       user={user}
@@ -28,6 +33,7 @@ export default async function XToolDashboardPage() {
         initialUser={user ?? undefined}
         initialIsDeveloper={initialIsDeveloper}
         credits={userCredits.credits}
+        usageSeries={usageSeries}
       />
     </CreatorLayout>
   );

@@ -1,22 +1,18 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   CalendarClockIcon,
   ClapperboardIcon,
-  FilmIcon,
   GlobeIcon,
-  LayersIcon,
-  MicIcon,
   ScanEyeIcon,
-  SparklesIcon,
   TerminalIcon,
   TimerIcon,
-  VideoIcon,
   Wand2Icon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRealtimeCredits } from "@/components/credits/realtime-credits";
+import type { ModuleUsageSeries, UsagePoint, UsageTimeframe } from "@/lib/module-usage";
  
 
 type CreatorDashboardProps = {
@@ -29,6 +25,7 @@ type CreatorDashboardProps = {
   };
   initialIsDeveloper?: boolean;
   credits?: number;
+  usageSeries?: ModuleUsageSeries;
 };
 
 const formatCredits = (credits?: number | null, isDeveloper?: boolean) => {
@@ -51,16 +48,6 @@ const buildStudioStats = (credits?: number | null, isDeveloper?: boolean) => [
 ];
 
 
-
-const usageData = [
-  { day: "Mon", value: 45 },
-  { day: "Tue", value: 52 },
-  { day: "Wed", value: 38 },
-  { day: "Thu", value: 65 },
-  { day: "Fri", value: 48 },
-  { day: "Sat", value: 32 },
-  { day: "Sun", value: 28 },
-];
 
 const recentActivity = [
   {
@@ -97,42 +84,53 @@ const recentActivity = [
   },
 ];
 
-const ModuleUsageGraph = () => {
-  const maxVal = Math.max(...usageData.map((d) => d.value));
-  const height = 120;
-  const width = 400;
-  const padding = 20;
+const ModuleUsageGraph = ({ data }: { data: UsagePoint[] }) => {
+  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const height = 160;
 
   return (
-    <div className="relative h-45 w-full">
-      <div className="flex h-full items-end justify-between gap-2 px-2">
-        {usageData.map((data, i) => {
-          const barHeight = (data.value / maxVal) * height;
-          return (
-            <div key={data.day} className="group relative flex flex-1 flex-col items-center gap-2">
-              <div
-                className="w-full rounded-t-lg bg-primary/20 transition-all duration-300 group-hover:bg-primary/40"
-                style={{ height: `${barHeight}px` }}
-              >
-                <div
-                  className="absolute bottom-0 left-0 h-1 w-full rounded-full bg-primary opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{ bottom: `${barHeight}px` }}
-                />
+    <div className="relative h-60 w-full">
+      {data.length === 0 ? (
+        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          No usage yet.
+        </div>
+      ) : (
+        <div className="flex h-full items-end justify-between gap-3 px-2">
+          {data.map((item) => {
+            const barHeight = (item.value / maxVal) * height;
+
+            return (
+              <div key={item.label} className="group relative flex flex-1 flex-col items-center gap-2">
+                <div className="relative w-full flex flex-col-reverse items-center">
+                  <div
+                    className="w-full rounded-t-lg bg-purple-500/80 transition-all duration-300 group-hover:bg-purple-500"
+                    style={{ height: `${barHeight}px` }}
+                  />
+                </div>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {item.label}
+                </span>
+                <div className="absolute -top-20 left-1/2 -translate-x-1/2 z-20 w-32 rounded-xl border border-border bg-background/95 p-2 text-[10px] shadow-xl backdrop-blur-sm opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-top-24 pointer-events-none">
+                  <div className="space-y-1.5">
+                    <p className="font-bold border-bottom pb-1 mb-1 border-border/50">{item.label} Usage</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                        <span className="text-muted-foreground">XDesign</span>
+                      </div>
+                      <span className="font-mono font-bold">{item.value}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                {data.day}
-              </span>
-              {/* Tooltip */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[10px] font-bold text-background opacity-0 transition-opacity group-hover:opacity-100">
-                {data.value}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
+
 
 const RecentActivity = () => {
   return (
@@ -164,13 +162,19 @@ const CreatorDashboard = ({
   initialUser,
   initialIsDeveloper,
   credits,
+  usageSeries,
 }: CreatorDashboardProps) => {
+  const [selectedTimeframe, setSelectedTimeframe] = useState<UsageTimeframe>("daily");
+
   const rootRef = useRef<HTMLDivElement | null>(null);
+
+
   const realtimeCredits = useRealtimeCredits({
     initialCredits: credits ?? null,
     isDeveloper: Boolean(initialIsDeveloper),
   });
   const studioStats = buildStudioStats(realtimeCredits ?? null, initialIsDeveloper);
+  const moduleUsage = usageSeries ?? { daily: [], monthly: [], yearly: [] };
 
   useLayoutEffect(() => {
     let ctx: { revert: () => void } | undefined;
@@ -289,17 +293,35 @@ const CreatorDashboard = ({
             <div>
               <h2 className="text-lg font-semibold">Module usage</h2>
               <p className="text-sm text-muted-foreground">
-                Weekly activity across all active modules.
+                Activity across XDesign for your workspace.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-500">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                +12% from last week
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mr-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="h-2 w-2 rounded-full bg-purple-500" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase">XDesign</span>
+                </div>
+              </div>
+              <div className="flex items-center p-1 bg-muted/50 rounded-lg border border-border/50">
+                {(["daily", "monthly", "yearly"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTimeframe(t)}
+                    className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-all ${
+                      selectedTimeframe === t
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <ModuleUsageGraph />
+          <ModuleUsageGraph data={moduleUsage[selectedTimeframe]} />
+
         </div>
 
         <div className="rounded-3xl border bg-card/70 p-6 shadow-sm">
