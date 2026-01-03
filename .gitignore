@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# XCreator (private until release)
+/app/(routes)/xtool/module-xcreator/
+/app/(routes)/xcreator/
+/components/creator/xcreator/
+/components/creator/xcreator-module.tsx

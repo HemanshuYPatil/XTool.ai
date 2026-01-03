@@ -1,18 +1,19 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import { Check } from "lucide-react";
 
 const plans = [
   {
     name: "Starter",
+    key: "starter",
     price: "$9",
     description: "Perfect for hobbyists.",
     features: ["450 credits", "Basic tools access", "Community support"],
   },
   {
     name: "Builder",
+    key: "builder",
     price: "$29",
     popular: true,
     description: "For serious builders.",
@@ -20,6 +21,7 @@ const plans = [
   },
   {
     name: "Studio",
+    key: "studio",
     price: "$99",
     description: "For professional teams.",
     features: ["7,200 credits", "Team collaboration", "Dedicated support", "API Access"],
@@ -27,6 +29,39 @@ const plans = [
 ];
 
 export const Pricing = () => {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const startCheckout = async (planKey: string) => {
+    setLoadingPlan(planKey);
+    try {
+      const response = await fetch("/api/polar/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
+
+      if (response.status === 401) {
+        const data = await response.json().catch(() => null);
+        window.location.href = data?.loginUrl ?? "/api/auth/login";
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Failed to start checkout.");
+        return;
+      }
+
+      const data = await response.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <section className="py-24 bg-background relative overflow-hidden">
       {/* Background Animation */}
@@ -80,16 +115,18 @@ export const Pricing = () => {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/pricing"
+              <button
+                type="button"
+                onClick={() => startCheckout(plan.key)}
+                disabled={loadingPlan === plan.key}
                 className={`w-full inline-flex items-center justify-center rounded-full py-3 text-sm font-semibold transition-all duration-300 ${
                   plan.popular
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
+                } ${loadingPlan === plan.key ? "opacity-70 cursor-not-allowed" : ""}`}
               >
-                Choose {plan.name}
-              </Link>
+                {loadingPlan === plan.key ? "Redirecting..." : `Choose ${plan.name}`}
+              </button>
             </div>
           ))}
         </div>

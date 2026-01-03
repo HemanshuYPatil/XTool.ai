@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +15,7 @@ const STORAGE_CODE_VERIFIER = "openrouter_code_verifier";
 
 type CallbackStatus = "working" | "success" | "error";
 
-export default function OpenRouterCallbackPage() {
+const CallbackContent = () => {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<CallbackStatus>("working");
   const [message, setMessage] = useState<string | null>(null);
@@ -140,5 +140,31 @@ export default function OpenRouterCallbackPage() {
         </Button>
       </section>
     </div>
+  );
+};
+
+export default function OpenRouterCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen w-full bg-background">
+          <section className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-6 px-6 py-16 text-center">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.25em] text-primary">
+                OpenRouter
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+                Connecting...
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Exchanging authorization code for your OpenRouter key.
+              </p>
+            </div>
+          </section>
+        </div>
+      }
+    >
+      <CallbackContent />
+    </Suspense>
   );
 }

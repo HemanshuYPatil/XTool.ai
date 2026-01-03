@@ -37,13 +37,13 @@ async function getClient() {
 
 export async function searchDocs(query: string, maxResults = 6) {
   const client = await getClient();
-  const response = await client.callTool({
+  const response = (await client.callTool({
     name: "search_docs",
     arguments: {
       query,
       maxResults,
     },
-  });
+  })) as { content?: { text?: string }[] } | null;
 
   const contentText = response?.content?.[0]?.text ?? "";
   if (!contentText) return [];

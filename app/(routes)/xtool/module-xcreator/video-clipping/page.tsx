@@ -3,8 +3,13 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { CreatorLayout } from "@/components/creator/creator-layout";
 import { VideoClippingTool } from "@/components/creator/xcreator/video-clipping-tool";
 import { SparklesIcon } from "lucide-react";
+import { showXCreator } from "@/lib/feature-flags";
 
 export default async function VideoClippingPage() {
+  if (!showXCreator) {
+    redirect("/xtool");
+  }
+
   const session = await getKindeServerSession();
   const user = await session.getUser();
   if (!user) {

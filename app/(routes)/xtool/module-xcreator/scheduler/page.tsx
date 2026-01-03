@@ -2,8 +2,13 @@ import { redirect } from "next/navigation";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { CreatorLayout } from "@/components/creator/creator-layout";
 import { AdvancedScheduler } from "@/components/creator/xcreator/advanced-scheduler";
+import { showXCreator } from "@/lib/feature-flags";
 
 export default async function SchedulerPage() {
+  if (!showXCreator) {
+    redirect("/xtool");
+  }
+
   const session = await getKindeServerSession();
   const user = await session.getUser();
   if (!user) {

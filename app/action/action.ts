@@ -84,7 +84,7 @@ export async function generateProjectName(prompt: string) {
     );
 
     if (!response.ok) {
-      return toShortName(prompt);
+      return toTwoWordName(prompt);
     }
 
     const data = await response.json();

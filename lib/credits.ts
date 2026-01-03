@@ -306,6 +306,20 @@ export const syncRealtimeCredits = async ({
     await publishUserCredits({ userId: kindeId, credits: user.credits });
   }
 
+  const isCreditDetailArray = (
+    value: unknown
+  ): value is { amount: number; reason: string; modelTokens?: number }[] =>
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        typeof (item as { amount?: unknown }).amount === "number" &&
+        typeof (item as { reason?: unknown }).reason === "string" &&
+        ((item as { modelTokens?: unknown }).modelTokens === undefined ||
+          typeof (item as { modelTokens?: unknown }).modelTokens === "number")
+    );
+
   // Publish sequentially to avoid Convex write conflicts on bulk sync.
   for (const tx of transactions) {
     await publishCreditTransaction({
@@ -314,7 +328,7 @@ export const syncRealtimeCredits = async ({
       amount: tx.amount,
       reason: tx.reason,
       modelTokens: tx.modelTokens ?? undefined,
-      details: Array.isArray(tx.details) ? tx.details : undefined,
+      details: isCreditDetailArray(tx.details) ? tx.details : undefined,
       createdAt: tx.createdAt.getTime(),
     });
   }

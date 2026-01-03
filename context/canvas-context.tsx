@@ -19,7 +19,8 @@ export type LoadingStatusType =
   | "running"
   | "analyzing"
   | "generating"
-  | "completed";
+  | "completed"
+  | "failed";
 
 interface CanvasContextType {
   theme?: ThemeType;

@@ -3,12 +3,13 @@ import React from "react";
 import Link from "next/link";
 import Logo from "@/components/logo";
 import { GithubIcon, TwitterIcon, YoutubeIcon, InstagramIcon } from "lucide-react";
+import { showXCreator } from "@/lib/feature-flags";
 
 const footerLinks = [
   {
     title: "Product",
     links: [
-      { name: "XCreator", href: "/xtool/module-xcreator" },
+      ...(showXCreator ? [{ name: "XCreator", href: "/xtool/module-xcreator" }] : []),
       { name: "XCode", href: "/xtool/module-xcode" },
       { name: "XDesign", href: "/xtool/module-xdesign" }
     ]

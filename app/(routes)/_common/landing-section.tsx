@@ -470,8 +470,8 @@ const LandingSection = ({
                           project={{
                             id: "loading",
                             name: PLACEHOLDER_PROJECT_NAME,
-                            createdAt: new Date().toISOString(),
-                            theme: null,
+                            createdAt: new Date(),
+                            theme: "",
                             frames: [],
                           } as ProjectType}
                         />

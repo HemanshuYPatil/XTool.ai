@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import Link from "next/link";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "../_common/header";
 import { Check, Sparkles } from "lucide-react";
 import { gsap } from "gsap";
@@ -9,6 +8,7 @@ import { gsap } from "gsap";
 const packs = [
   {
     name: "Starter",
+    key: "starter",
     price: "$9",
     credits: "450 credits",
     description: "Great for quick explorations and small batches.",
@@ -16,6 +16,7 @@ const packs = [
   },
   {
     name: "Builder",
+    key: "builder",
     price: "$29",
     credits: "1,800 credits",
     description: "Ideal for regular design iterations.",
@@ -24,6 +25,7 @@ const packs = [
   },
   {
     name: "Studio",
+    key: "studio",
     price: "$99",
     credits: "7,200 credits",
     description: "For teams running heavy AI workflows.",
@@ -34,6 +36,38 @@ const packs = [
 const PricingPage = () => {
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const startCheckout = async (planKey: string) => {
+    setLoadingPlan(planKey);
+    try {
+      const response = await fetch("/api/polar/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
+
+      if (response.status === 401) {
+        const data = await response.json().catch(() => null);
+        window.location.href = data?.loginUrl ?? "/api/auth/login";
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Failed to start checkout.");
+        return;
+      }
+
+      const data = await response.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -131,16 +165,18 @@ const PricingPage = () => {
                    ))}
                 </ul>
 
-                <Link
-                  href="/billing"
+                <button
+                  type="button"
+                  onClick={() => startCheckout(pack.key)}
+                  disabled={loadingPlan === pack.key}
                   className={`w-full inline-flex items-center justify-center rounded-full py-4 text-sm font-bold transition-all duration-300 ${
                     pack.highlight
                       ? "bg-primary text-primary-foreground shadow-lg hover:shadow-primary/25 hover:scale-[1.02]"
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
+                  } ${loadingPlan === pack.key ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
-                  Get Started
-                </Link>
+                  {loadingPlan === pack.key ? "Redirecting..." : "Get Started"}
+                </button>
               </div>
             ))}
           </div>

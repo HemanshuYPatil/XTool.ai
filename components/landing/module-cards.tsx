@@ -11,6 +11,7 @@ import {
   SparklesIcon,
   LayersIcon
 } from "lucide-react";
+import { showXCreator } from "@/lib/feature-flags";
 
 const modules = [
   {
@@ -51,6 +52,10 @@ const modules = [
 ];
 
 export const ModuleCards = () => {
+  const visibleModules = showXCreator
+    ? modules
+    : modules.filter((module) => module.title !== "XCreator");
+
   return (
     <section id="modules" className="py-24 px-6 max-w-7xl mx-auto">
       <div className="text-center mb-16 space-y-4">
@@ -63,7 +68,7 @@ export const ModuleCards = () => {
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
-        {modules.map((module) => (
+        {visibleModules.map((module) => (
           <Card 
             key={module.title}
             className="group relative p-8 rounded-4xl border bg-card/40 backdrop-blur-sm hover:bg-card/60 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/5 overflow-hidden"
