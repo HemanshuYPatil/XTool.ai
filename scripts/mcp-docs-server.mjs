@@ -5,7 +5,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 
-const PORT = Number(process.env.MCP_DOCS_PORT || 8787);
+const PORT = Number(process.env.MCP_DOCS_PORT || process.env.PORT || 8787);
 const ROOT_DIR = process.env.MCP_DOCS_ROOT
   ? path.resolve(process.env.MCP_DOCS_ROOT)
   : process.cwd();
