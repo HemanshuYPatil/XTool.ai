@@ -281,9 +281,10 @@ export const upsertFrame = mutation({
     await requireAuthorizedUser(ctx, args.userId, args.serverSecret);
 
     if (args.replaceFrameId) {
+      const replaceFrameId = args.replaceFrameId;
       const old = await ctx.db
         .query("realtimeFrames")
-        .withIndex("by_frame", (q) => q.eq("frameId", args.replaceFrameId))
+        .withIndex("by_frame", (q) => q.eq("frameId", replaceFrameId))
         .first();
       if (old) {
         await ctx.db.delete(old._id);

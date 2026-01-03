@@ -23,13 +23,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Logo from "@/components/logo";
+import { showXCreator } from "@/lib/feature-flags";
 
 const mainNavigation = [
   { name: "Dashboard", href: "/xtool", icon: LayoutDashboardIcon },
   { name: "XDesign", href: "/xtool/module-xdesign", icon: Wand2Icon },
   { name: "XCode CLI", href: "/xtool/module-xcode", icon: GlobeIcon },
   { name: "XCreator", href: "/xtool/module-xcreator", icon: ClapperboardIcon },
-];
+].filter((item) => showXCreator || item.name !== "XCreator");
 
 const xcreatorNavigation = [
   { name: "XCreator Home", href: "/xtool/module-xcreator", icon: HomeIcon },
@@ -37,7 +38,7 @@ const xcreatorNavigation = [
   { name: "AI Video Clip", href: "/xtool/module-xcreator/video-clipping", icon: ScissorsIcon },
   { name: "Manage Accounts", href: "/xtool/module-xcreator/accounts", icon: UsersIcon },
   { name: "Schedule Post", href: "/xtool/module-xcreator/scheduler", icon: CalendarIcon },
-];
+].filter((item) => showXCreator);
 
 type CreatorSidebarProps = {
   isCollapsed: boolean;

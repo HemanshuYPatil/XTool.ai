@@ -24,15 +24,36 @@ const BillingPage = async () => {
     details?: { amount: number; reason: string; modelTokens?: number }[];
     createdAt: Date;
   }[] = [];
+  const isCreditDetailArray = (
+    value: unknown
+  ): value is { amount: number; reason: string; modelTokens?: number }[] =>
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        typeof (item as { amount?: unknown }).amount === "number" &&
+        typeof (item as { reason?: unknown }).reason === "string" &&
+        ((item as { modelTokens?: unknown }).modelTokens === undefined ||
+          typeof (item as { modelTokens?: unknown }).modelTokens === "number")
+    );
   if (user) {
     await ensureUserFromKinde(user);
     const userCredits = await ensureUserCredits(user.id);
     initialCredits = userCredits.credits;
     await syncRealtimeCredits({ kindeId: user.id });
-    transactions = await getCreditTransactionsForUser({
+    const rawTransactions = await getCreditTransactionsForUser({
       kindeId: user.id,
       limit: 10,
     });
+    transactions = rawTransactions.map((tx) => ({
+      id: tx.id,
+      amount: tx.amount,
+      reason: tx.reason,
+      modelTokens: tx.modelTokens ?? undefined,
+      details: isCreditDetailArray(tx.details) ? tx.details : undefined,
+      createdAt: tx.createdAt,
+    }));
   }
 
   const developer = user ? await isDeveloper(user.id) : false;

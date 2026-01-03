@@ -43,8 +43,10 @@ export function DocsAgent({ isEmbedded = false, onClose }: { isEmbedded?: boolea
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages, status } = useChat({
     api: "/api/docs/chat",
+    streamProtocol: "text",
+    experimental_throttle: 40,
   });
 
   // ... (useEffect and other handlers remain same)
@@ -171,7 +173,13 @@ export function DocsAgent({ isEmbedded = false, onClose }: { isEmbedded?: boolea
                 </p>
               </div>
             )}
-            {messages.map((m) => (
+            {messages.map((m, index) => {
+              const isAssistant = m.role === "assistant";
+              const isStreaming = status === "streaming";
+              const isLastMessage = index === messages.length - 1;
+              const messageText = typeof m.content === "string" ? m.content : "";
+
+              return (
               <div
                 key={m.id}
                 className={cn(
@@ -181,12 +189,15 @@ export function DocsAgent({ isEmbedded = false, onClose }: { isEmbedded?: boolea
               >
                 {m.role === "user" ? (
                   <div className="bg-muted text-foreground px-4 py-2.5 rounded-[1.25rem] rounded-tr-sm text-[13px] leading-relaxed font-medium max-w-[85%] shadow-sm border border-border/50">
-                    {m.content}
+                    {messageText}
                   </div>
                 ) : (
                   <div className="space-y-2 w-full pl-1">
                     <div className="text-[14px] text-foreground/90 leading-7 font-normal tracking-wide">
-                      {m.content}
+                      {messageText}
+                      {isAssistant && isStreaming && isLastMessage && (
+                        <span className="ml-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-foreground/60 align-middle" />
+                      )}
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-all duration-300">
                       <button className="p-1.5 hover:text-foreground hover:bg-muted/50 rounded-md transition-all">
@@ -205,7 +216,8 @@ export function DocsAgent({ isEmbedded = false, onClose }: { isEmbedded?: boolea
                   </div>
                 )}
               </div>
-            ))}
+            );
+            })}
             {isLoading && (
               <div className="flex gap-2 animate-in fade-in duration-300 pl-1">
                 <div className="flex gap-1.5">

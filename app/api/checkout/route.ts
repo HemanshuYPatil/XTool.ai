@@ -1,12 +1,8 @@
-import { NextResponse } from "next/server";
+import { Checkout } from "@polar-sh/nextjs";
 
-export async function GET(req: Request) {
-  return NextResponse.redirect(new URL("/billing", req.url));
-}
-
-export async function POST() {
-  return NextResponse.json(
-    { error: "Checkout is disabled. Use credits instead." },
-    { status: 410 }
-  );
-}
+export const GET = Checkout({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  successUrl: process.env.POLAR_SUCCESS_URL,
+  returnUrl: process.env.POLAR_CANCEL_URL,
+  server: "sandbox",
+});

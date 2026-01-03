@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useRealtimeCredits } from "@/components/credits/realtime-credits";
 import type { ModuleUsageSeries, UsagePoint, UsageTimeframe } from "@/lib/module-usage";
+import { showXCreator } from "@/lib/feature-flags";
  
 
 type CreatorDashboardProps = {
@@ -82,7 +83,7 @@ const recentActivity = [
     time: "3 hours ago",
     icon: ClapperboardIcon,
   },
-];
+].filter((activity) => showXCreator || !activity.target.includes("XCreator"));
 
 const ModuleUsageGraph = ({ data }: { data: UsagePoint[] }) => {
   const maxVal = Math.max(...data.map((d) => d.value), 1);
