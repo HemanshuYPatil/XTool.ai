@@ -1,6 +1,6 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { CreatorLayout } from "@/components/creator/creator-layout";
-import { Settings2Icon, BellIcon, ShieldCheckIcon, PaletteIcon } from "lucide-react";
+import { BellIcon, ShieldCheckIcon, PaletteIcon } from "lucide-react";
 import ThemeToggle from "@/components/settings/theme-toggle";
 
 export default async function SettingsPage() {
@@ -52,7 +52,7 @@ export default async function SettingsPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold">Notifications</h2>
-                <p className="text-sm text-muted-foreground">Control when and how you're notified.</p>
+                <p className="text-sm text-muted-foreground">Control when and how you&apos;re notified.</p>
               </div>
             </div>
 

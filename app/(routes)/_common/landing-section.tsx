@@ -14,6 +14,7 @@ import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { Spinner } from "@/components/ui/spinner";
 import { ProjectType } from "@/types/project";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   FolderOpenDotIcon,
   MoreHorizontalIcon,
@@ -52,6 +53,25 @@ type LandingSectionProps = {
 };
 
 const PLACEHOLDER_PROJECT_NAME = "Q model";
+
+const ClientRelativeTime = ({ value }: { value: Date | string }) => {
+  const [text, setText] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setText(formatDistanceToNow(new Date(value), { addSuffix: true }));
+  }, [value]);
+
+  return <span suppressHydrationWarning>{text}</span>;
+};
+
+const LOADING_PROJECT = {
+  id: "loading",
+  name: PLACEHOLDER_PROJECT_NAME,
+  createdAt: new Date(),
+  theme: "",
+  frames: [],
+} as ProjectType;
 
 const LandingSection = ({
   initialUser,
@@ -467,13 +487,7 @@ const LandingSection = ({
                       {isPending && (
                         <ProjectCard
                           loading
-                          project={{
-                            id: "loading",
-                            name: PLACEHOLDER_PROJECT_NAME,
-                            createdAt: new Date(),
-                            theme: "",
-                            frames: [],
-                          } as ProjectType}
+                          project={LOADING_PROJECT}
                         />
                       )}
                       {projects?.map((project: ProjectType) => (
@@ -610,9 +624,7 @@ const LandingSection = ({
               >
                 <span className="font-medium">{project.name}</span>
                 <span className="text-muted-foreground">
-                  {formatDistanceToNow(new Date(project.createdAt), {
-                    addSuffix: true,
-                  })}
+                  <ClientRelativeTime value={project.createdAt} />
                 </span>
               </div>
             ))}
@@ -657,8 +669,6 @@ const ProjectCard = memo(
     loading?: boolean;
   }) => {
     const router = useRouter();
-    const createdAtDate = new Date(project.createdAt);
-    const timeAgo = formatDistanceToNow(createdAtDate, { addSuffix: true });
     const thumbnail = project.thumbnail || null;
 
     const onRoute = () => {
@@ -752,8 +762,11 @@ const ProjectCard = memo(
               </span>
             </div>
           ) : thumbnail ? (
-            <img
+            <Image
               src={thumbnail}
+              alt={project.name}
+              width={400}
+              height={300}
               className="w-full h-full object-cover object-left
            scale-110
           "
@@ -776,7 +789,9 @@ const ProjectCard = memo(
           >
             {project.name}
           </h3>
-          <p className="text-xs text-muted-foreground">{timeAgo}</p>
+          <p className="text-xs text-muted-foreground">
+            <ClientRelativeTime value={project.createdAt} />
+          </p>
         </div>
       </div>
     );

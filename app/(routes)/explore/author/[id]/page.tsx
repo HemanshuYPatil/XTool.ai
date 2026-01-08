@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import prisma from "@/lib/prisma";
 import Logo from "@/components/logo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -89,9 +90,11 @@ const AuthorProfilePage = async ({
             >
               <div className="rounded-2xl border bg-muted/30 overflow-hidden">
                 {project.thumbnail ? (
-                  <img
+                  <Image
                     src={project.thumbnail}
                     alt={`${project.name} preview`}
+                    width={400}
+                    height={300}
                     className="h-44 w-full object-cover"
                   />
                 ) : (

@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import axios from "axios";
@@ -41,7 +42,7 @@ export const useDeleteFrame = (projectId: string) => {
     onSuccess: () => {
       toast.success("Frame deleted successfully");
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.log("Delete frame failed", error);
       toast.error("Failed to delete frame");
     },

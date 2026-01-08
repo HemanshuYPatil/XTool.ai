@@ -28,6 +28,18 @@ import Script from "next/script";
 
 type TabType = "design" | "layout" | "content";
 
+const colorSwatches = [
+  "#0f172a",
+  "#111827",
+  "#1f2937",
+  "#ffffff",
+  "#f97316",
+  "#22c55e",
+  "#3b82f6",
+  "#a855f7",
+  "#ec4899",
+];
+
 const CollapsibleSection = ({ 
   title, 
   icon: Icon, 
@@ -35,7 +47,7 @@ const CollapsibleSection = ({
   defaultOpen = true 
 }: { 
   title: string; 
-  icon: any; 
+  icon: React.ElementType; 
   children: React.ReactNode; 
   defaultOpen?: boolean;
 }) => {
@@ -60,23 +72,70 @@ const CollapsibleSection = ({
   );
 };
 
+const TabButton = ({ 
+  id, 
+  label, 
+  icon: Icon, 
+  isActive, 
+  onClick 
+}: { 
+  id: TabType; 
+  label: string; 
+  icon: React.ElementType; 
+  isActive: boolean; 
+  onClick: (id: TabType) => void;
+}) => (
+  <button
+    onClick={() => onClick(id)}
+    className={cn(
+      "flex-1 flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-all border-b-2",
+      isActive
+        ? "border-primary text-primary bg-primary/5" 
+        : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
+    )}
+  >
+    <Icon className="size-3.5" />
+    {label}
+  </button>
+);
+
+const ColorSwatchGrid = ({ 
+  currentValue, 
+  onSelect, 
+  prefix 
+}: { 
+  currentValue: string; 
+  onSelect: (color: string) => void; 
+  prefix: string;
+}) => (
+  <div className="grid grid-cols-9 gap-1.5 py-1">
+    {colorSwatches.map((color) => (
+      <button
+        key={`${prefix}-${color}`}
+        type="button"
+        onClick={() => onSelect(color)}
+        className={cn(
+          "size-5 rounded-full border shadow-sm hover:scale-110 transition-all relative",
+          currentValue === color && "ring-2 ring-primary ring-offset-1 ring-offset-background"
+        )}
+        style={{ backgroundColor: color }}
+        title={color}
+      >
+        {currentValue === color && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className={cn("size-1 rounded-full", color === "#ffffff" ? "bg-black" : "bg-white")} />
+          </div>
+        )}
+      </button>
+    ))}
+  </div>
+);
+
 export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
   const { selectedElement, setSelectedElement, updateElement } = useCanvas();
   const [activeTab, setActiveTab] = useState<TabType>("design");
   const [panelMode, setPanelMode] = useState<"simple" | "advanced">("simple");
   const [isVisible, setIsVisible] = useState(true);
-
-  const colorSwatches = [
-    "#0f172a",
-    "#111827",
-    "#1f2937",
-    "#ffffff",
-    "#f97316",
-    "#22c55e",
-    "#3b82f6",
-    "#a855f7",
-    "#ec4899",
-  ];
 
   if (!isEditMode) return null;
 
@@ -105,53 +164,6 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
       text: value,
     });
   };
-
-  const TabButton = ({ id, label, icon: Icon }: { id: TabType, label: string, icon: any }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={cn(
-        "flex-1 flex flex-col items-center gap-1 py-2 text-[10px] font-medium transition-all border-b-2",
-        activeTab === id 
-          ? "border-primary text-primary bg-primary/5" 
-          : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
-      )}
-    >
-      <Icon className="size-3.5" />
-      {label}
-    </button>
-  );
-
-  const ColorSwatchGrid = ({ 
-    currentValue, 
-    onSelect, 
-    prefix 
-  }: { 
-    currentValue: string; 
-    onSelect: (color: string) => void; 
-    prefix: string;
-  }) => (
-    <div className="grid grid-cols-9 gap-1.5 py-1">
-      {colorSwatches.map((color) => (
-        <button
-          key={`${prefix}-${color}`}
-          type="button"
-          onClick={() => onSelect(color)}
-          className={cn(
-            "size-5 rounded-full border shadow-sm hover:scale-110 transition-all relative",
-            currentValue === color && "ring-2 ring-primary ring-offset-1 ring-offset-background"
-          )}
-          style={{ backgroundColor: color }}
-          title={color}
-        >
-          {currentValue === color && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className={cn("size-1 rounded-full", color === "#ffffff" ? "bg-black" : "bg-white")} />
-            </div>
-          )}
-        </button>
-      ))}
-    </div>
-  );
 
   if (!isVisible && selectedElement) {
     return (
@@ -228,9 +240,9 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
         {/* Tabs */}
         {panelMode === "advanced" && (
           <div className="flex border-b border-border/40 bg-muted/5">
-            <TabButton id="design" label="Design" icon={Palette} />
-            <TabButton id="layout" label="Layout" icon={LayoutIcon} />
-            <TabButton id="content" label="Content" icon={Type} />
+            <TabButton id="design" label="Design" icon={Palette} isActive={activeTab === "design"} onClick={setActiveTab} />
+            <TabButton id="layout" label="Layout" icon={LayoutIcon} isActive={activeTab === "layout"} onClick={setActiveTab} />
+            <TabButton id="content" label="Content" icon={Type} isActive={activeTab === "content"} onClick={setActiveTab} />
           </div>
         )}
 
@@ -619,7 +631,7 @@ export const EditingSidebar = ({ isEditMode }: { isEditMode: boolean }) => {
                                   placeholder="mdi:home"
                                 />
                                 <div className="size-9 bg-muted/30 rounded-lg flex items-center justify-center border border-border/40 shadow-inner">
-                                  {/* @ts-ignore */}
+                                  {/* @ts-expect-error - iconify-icon is a custom element */}
                                   <iconify-icon icon={safeAttributes.icon} width="18"></iconify-icon>
                                 </div>
                               </div>

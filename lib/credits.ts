@@ -7,7 +7,7 @@ import {
   publishUserCredits,
 } from "@/lib/convex-client";
 
-export const INITIAL_CREDITS = 200;
+export const INITIAL_CREDITS = 0;
 export const PROJECT_CREATION_COST = 50;
 const readPositiveInt = (value: string | undefined, fallback: number) => {
   const parsed = Number.parseInt(value ?? "", 10);
@@ -181,6 +181,8 @@ export const deductCredits = async ({
   publishRealtime?: boolean;
   recordTransaction?: boolean;
 }) => {
+  void promptTokens;
+  void completionTokens;
   if (amount <= 0) {
     return { ok: true, credits: null };
   }
@@ -382,6 +384,8 @@ export const recordCreditSummary = async ({
   details: { amount: number; reason: string; modelTokens?: number }[];
   transactionId?: string;
 }) => {
+  void promptTokens;
+  void completionTokens;
   if (amount >= 0) return { ok: true };
   await ensureUserCredits(kindeId);
   const formattedReason = buildCreditReason(reason, projectName);

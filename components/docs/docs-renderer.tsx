@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "@/lib/utils";
-import { Copy, Check, Info, AlertCircle, Terminal } from "lucide-react";
+import { Copy, Check, Info } from "lucide-react";
 
 export function DocsRenderer({ content, className }: { content: string; className?: string }) {
   const [copied, setCopied] = useState<string | null>(null);
@@ -20,7 +20,7 @@ export function DocsRenderer({ content, className }: { content: string; classNam
     <div className={cn("prose prose-invert max-w-none", className)}>
       <ReactMarkdown
         components={{
-          code({ node, inline, className, children, ...props }: any) {
+          code({ inline, className, children, ...props }: any) {
             const match = /language-(\w+)/.exec(className || "");
             const codeString = String(children).replace(/\n$/, "");
             

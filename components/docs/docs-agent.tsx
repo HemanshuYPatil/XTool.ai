@@ -5,14 +5,10 @@ import { useChat } from "@ai-sdk/react";
 import { 
   MessageCircle, 
   X, 
-  Send, 
   Bot, 
-  User, 
-  Minimize2, 
   Sparkles, 
   Command, 
   Trash2, 
-  Maximize2, 
   ThumbsUp, 
   ThumbsDown, 
   Copy, 
@@ -21,7 +17,6 @@ import {
   ArrowDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import gsap from "gsap";
@@ -31,8 +26,7 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription, 
-  DialogFooter,
-  DialogClose
+  DialogFooter
 } from "@/components/ui/dialog";
 
 export function DocsAgent({ isEmbedded = false, onClose }: { isEmbedded?: boolean; onClose?: () => void }) {

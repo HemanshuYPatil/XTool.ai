@@ -13,7 +13,6 @@ import {
   CopyIcon,
   CheckIcon,
   ArrowRightIcon,
-  LayersIcon,
 } from "lucide-react";
 
 type XCodeCliOverviewProps = {

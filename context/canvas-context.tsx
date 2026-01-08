@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { getThemesForPlan, ThemeType } from "@/lib/themes";
@@ -51,6 +50,8 @@ interface CanvasContextType {
   loadingStatus: LoadingStatusType | null;
   setLoadingStatus: (status: LoadingStatusType | null) => void;
 }
+
+const enableRealtimeFrames = false;
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
 export const CanvasProvider = ({
@@ -106,9 +107,8 @@ export const CanvasProvider = ({
         );
       });
 
-      if (selectedElement && selectedElement.frameId === frameId) {
-        setSelectedElement((prev) => {
-          if (!prev) return null;
+      setSelectedElement((prev) => {
+        if (prev && prev.frameId === frameId) {
           return {
             ...prev,
             elementInfo: {
@@ -124,13 +124,15 @@ export const CanvasProvider = ({
               },
             },
           };
-        });
-      }
+        }
+        return prev;
+      });
     },
-    [selectedElement]
+    [setSelectedElement]
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingStatus(hasInitialData ? "idle" : "running");
     setFrames(initialFrames);
     setThemeId(resolvedInitialTheme || "");
@@ -150,7 +152,7 @@ export const CanvasProvider = ({
     api.realtime.getProjectState,
     projectId ? { projectId } : "skip"
   );
-  const enableRealtimeFrames = false;
+  
   const realtimeFrames = useQuery(
     api.realtime.getProjectFrames,
     enableRealtimeFrames && projectId ? { projectId } : "skip"
@@ -159,6 +161,7 @@ export const CanvasProvider = ({
   useEffect(() => {
     if (!projectId || !projectRealtime) return;
     if (projectRealtime.themeId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setThemeId(projectRealtime.themeId);
     }
     const nextStatus = projectRealtime.status ?? "idle";
@@ -217,7 +220,7 @@ export const CanvasProvider = ({
 
   const addFrame = useCallback((frame: FrameType) => {
     setFrames((prev) => [...prev, frame]);
-  }, []);
+  }, [setFrames]);
 
   const updateFrame = useCallback((id: string, data: Partial<FrameType>) => {
     setFrames((prev) => {
@@ -225,7 +228,7 @@ export const CanvasProvider = ({
         frame.id === id ? { ...frame, ...data } : frame
       );
     });
-  }, []);
+  }, [setFrames]);
 
   return (
     <CanvasContext.Provider

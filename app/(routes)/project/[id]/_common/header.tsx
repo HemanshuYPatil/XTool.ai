@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
-import Logo from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeftIcon,

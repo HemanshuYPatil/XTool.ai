@@ -753,7 +753,10 @@ export const FREE_THEME_IDS = [
 
 export const getThemesForPlan = () => THEME_LIST;
 
-export const isThemeAllowedForPlan = (_themeId: string) => true;
+export const isThemeAllowedForPlan = (_themeId: string) => {
+  void _themeId;
+  return true;
+};
 
 export function parseThemeColors(style: string) {
   const colors: Record<string, string> = {};

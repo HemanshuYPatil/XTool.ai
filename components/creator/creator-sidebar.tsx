@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboardIcon,
   ClapperboardIcon,
-  GlobeIcon,
   Wand2Icon,
   SettingsIcon,
   ChevronLeftIcon,
@@ -16,7 +15,6 @@ import {
   UsersIcon,
   CalendarIcon,
   ArrowLeftIcon,
-  FileTextIcon,
   TagIcon,
   ArrowUpRightIcon,
   HomeIcon,
@@ -28,7 +26,6 @@ import { showXCreator } from "@/lib/feature-flags";
 const mainNavigation = [
   { name: "Dashboard", href: "/xtool", icon: LayoutDashboardIcon },
   { name: "XDesign", href: "/xtool/module-xdesign", icon: Wand2Icon },
-  { name: "XCode CLI", href: "/xtool/module-xcode", icon: GlobeIcon },
   { name: "XCreator", href: "/xtool/module-xcreator", icon: ClapperboardIcon },
 ].filter((item) => showXCreator || item.name !== "XCreator");
 
@@ -38,7 +35,15 @@ const xcreatorNavigation = [
   { name: "AI Video Clip", href: "/xtool/module-xcreator/video-clipping", icon: ScissorsIcon },
   { name: "Manage Accounts", href: "/xtool/module-xcreator/accounts", icon: UsersIcon },
   { name: "Schedule Post", href: "/xtool/module-xcreator/scheduler", icon: CalendarIcon },
-].filter((item) => showXCreator);
+].filter(() => showXCreator);
+
+const mainNavigationSections = [
+  { title: "", items: mainNavigation },
+];
+
+const xcreatorNavigationSections = [
+  { title: "XCreator", items: xcreatorNavigation },
+];
 
 type CreatorSidebarProps = {
   isCollapsed: boolean;
@@ -49,7 +54,7 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
   const pathname = usePathname();
   const isXCreatorContext = pathname.startsWith("/xtool/module-xcreator");
   
-  const navigation = isXCreatorContext ? xcreatorNavigation : mainNavigation;
+  const navigationSections = isXCreatorContext ? xcreatorNavigationSections : mainNavigationSections;
 
   return (
     <aside
@@ -78,7 +83,7 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
           </Button>
         </div>
 
-        <nav className="flex-1 space-y-1 px-2">
+        <nav className="flex flex-1 flex-col px-2 min-h-0">
           {isXCreatorContext && !isCollapsed && (
             <div className="mb-4 px-3">
               <Link
@@ -91,49 +96,44 @@ export function CreatorSidebar({ isCollapsed, setIsCollapsed }: CreatorSidebarPr
             </div>
           )}
           
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  isCollapsed ? "justify-center px-0" : "",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+            {navigationSections.map((section) => (
+              <div key={section.title} className="space-y-1">
+                {!isCollapsed && section.title && (
+                  <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
+                    {section.title}
+                  </p>
                 )}
-              >
-                <item.icon
-                  className={cn(
-                    "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110",
-                    isActive ? "text-primary-foreground" : "text-muted-foreground"
-                  )}
-                />
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        isCollapsed ? "justify-center px-0" : "",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          "h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110",
+                          isActive ? "text-primary-foreground" : "text-muted-foreground"
+                        )}
+                      />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </nav>
 
         <div className="mt-auto border-t pt-4 px-2 space-y-1">
-          <Link
-            href="/docs"
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-              "group flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-muted hover:text-foreground",
-              isCollapsed && "justify-center px-0"
-            )}
-          >
-            <div className="flex items-center gap-3">
-              <FileTextIcon className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-              {!isCollapsed && <span>Documentation</span>}
-            </div>
-            {!isCollapsed && <ArrowUpRightIcon className="h-3.5 w-3.5 opacity-50" />}
-          </Link>
-
           <Link
             href="/pricing"
             target="_blank"

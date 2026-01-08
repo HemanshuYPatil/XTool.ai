@@ -136,7 +136,7 @@ const CallbackContent = () => {
           </p>
         </div>
         <Button asChild className="rounded-full">
-          <Link href="/xcode-cli/openrouter">Return to setup</Link>
+          <Link href="/xtool">Return to dashboard</Link>
         </Button>
       </section>
     </div>

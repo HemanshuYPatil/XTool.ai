@@ -7,6 +7,7 @@ import {
   RealtimeCreditsValue,
 } from "@/components/credits/realtime-credits";
 import { CreditHistoryList } from "@/components/credits/credit-history-list";
+import { TopUpCard } from "@/components/credits/topup-card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon } from "lucide-react";
@@ -94,19 +95,7 @@ const BillingPage = async () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border bg-card/40 p-8 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-xl font-bold">Top up</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Purchase credit packs (coming soon).
-              </p>
-            </div>
-            <div className="rounded-2xl border bg-background/50 p-5">
-              <p className="text-xs text-muted-foreground">
-                Contact support to enable purchases for your workspace.
-              </p>
-            </div>
-          </div>
+          <TopUpCard />
 
           <div className="rounded-3xl border bg-card/40 p-8 shadow-sm lg:col-span-3 space-y-6">
             <div className="flex items-center justify-between">

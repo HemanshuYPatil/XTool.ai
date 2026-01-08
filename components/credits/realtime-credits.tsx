@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { splitCreditReason } from "@/lib/credit-reason";
@@ -33,22 +33,29 @@ export const useRealtimeCredits = ({
   initialCredits: number | null;
   isDeveloper: boolean;
 }) => {
-  const lastKnownRef = useRef<number | null>(initialCredits ?? null);
+  const [cachedCredits, setCachedCredits] = useState<number | null>(initialCredits);
   const data = useQuery(
     api.realtime.getUserCredits,
     isDeveloper ? "skip" : {}
   );
-  if (isDeveloper) return null;
+
   useEffect(() => {
-    if (typeof initialCredits === "number" && lastKnownRef.current == null) {
-      lastKnownRef.current = initialCredits;
+    if (typeof initialCredits === "number" && cachedCredits === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCachedCredits(initialCredits);
     }
-  }, [initialCredits]);
-  if (typeof data?.credits === "number") {
-    lastKnownRef.current = data.credits;
-    return data.credits;
-  }
-  return lastKnownRef.current ?? initialCredits;
+  }, [initialCredits, cachedCredits]);
+
+  useEffect(() => {
+    if (typeof data?.credits === "number") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCachedCredits(data.credits);
+    }
+  }, [data?.credits]);
+
+  if (isDeveloper) return null;
+
+  return typeof data?.credits === "number" ? data.credits : (cachedCredits ?? initialCredits);
 };
 
 export const RealtimeCreditsValue = ({

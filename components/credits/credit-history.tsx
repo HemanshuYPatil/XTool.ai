@@ -214,7 +214,7 @@ export const CreditHistory = ({
                 </div>
                 <div className="space-y-1 text-left">
                   <h4 className="font-semibold text-sm leading-none group-hover:text-primary transition-colors">
-                    {projectName}
+                    {isDeduction ? (projectName || baseReason || "Credits Deducted") : "Token Credit"}
                   </h4>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80">
                     <span className="font-medium" suppressHydrationWarning>
@@ -257,123 +257,172 @@ export const CreditHistory = ({
       <Dialog open={Boolean(selected)} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Credit deduction details</DialogTitle>
+            <DialogTitle>
+              {selected?.amount && selected.amount > 0 ? "Transaction Details" : "Credit deduction details"}
+            </DialogTitle>
           </DialogHeader>
           {selected ? (
-            <div className="space-y-6">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border bg-background/60 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Credits
-                  </p>
-                  <p className="mt-2 text-lg font-bold">
-                    {Math.abs(selected.amount).toLocaleString("en-US")}
-                  </p>
-                </div>
-                <div className="rounded-2xl border bg-background/60 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Total tokens
-                  </p>
-                  <p className="mt-2 text-lg font-bold">
-                    {formatNumber(selectedBreakdown?.totalTokens)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border bg-background/60 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Reason
-                  </p>
-                  <p className="mt-2 text-sm font-semibold">
-                    {selectedReason?.baseReason ?? selected.reason}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border bg-background/60 p-5 space-y-4">
-                <div>
-                  <p className="text-sm font-semibold">Token distribution</p>
-                  <p className="text-xs text-muted-foreground">
-                    Input vs. output tokens for this deduction.
-                  </p>
-                </div>
-                {selectedBreakdown?.hasBreakdown ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span>Input tokens</span>
-                      <span>{formatNumber(selectedBreakdown.promptTokens)}</span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              (selectedBreakdown.promptTokens /
-                                selectedBreakdown.totalTokens) *
-                                100
-                            )
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span>Output tokens</span>
-                      <span>
-                        {formatNumber(selectedBreakdown.completionTokens)}
-                      </span>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-emerald-500"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(
-                              (selectedBreakdown.completionTokens /
-                                selectedBreakdown.totalTokens) *
-                                100
-                            )
-                          )}%`,
-                        }}
-                      />
-                    </div>
+            selected.amount < 0 ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Credits
+                    </p>
+                    <p className="mt-2 text-lg font-bold">
+                      {Math.abs(selected.amount).toLocaleString("en-US")}
+                    </p>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Token breakdown is not available for this transaction.
-                  </p>
-                )}
-              </div>
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Total tokens
+                    </p>
+                    <p className="mt-2 text-lg font-bold">
+                      {formatNumber(selectedBreakdown?.totalTokens)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Reason
+                    </p>
+                    <p className="mt-2 text-sm font-semibold">
+                      {selectedReason?.baseReason ?? selected.reason}
+                    </p>
+                  </div>
+                </div>
 
-              {selected.details?.length ? (
-                <div className="rounded-2xl border bg-background/60 p-5 space-y-3">
-                  <p className="text-sm font-semibold">Deduction breakdown</p>
-                  <div className="space-y-2 text-sm">
-                    {selected.details.map((detail, index) => (
-                      <div
-                        key={`${detail.reason}-${index}`}
-                        className="flex items-center justify-between border-b border-border/60 pb-2 last:border-b-0 last:pb-0"
-                      >
-                        <span>{detail.reason}</span>
-                        <span className="font-semibold">
-                          {Math.abs(detail.amount).toLocaleString("en-US")} credits
+                <div className="rounded-2xl border bg-background/60 p-5 space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold">Token distribution</p>
+                    <p className="text-xs text-muted-foreground">
+                      Input vs. output tokens for this deduction.
+                    </p>
+                  </div>
+                  {selectedBreakdown?.hasBreakdown ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span>Input tokens</span>
+                        <span>{formatNumber(selectedBreakdown.promptTokens)}</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round(
+                                (selectedBreakdown.promptTokens /
+                                  selectedBreakdown.totalTokens) *
+                                  100
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span>Output tokens</span>
+                        <span>
+                          {formatNumber(selectedBreakdown.completionTokens)}
                         </span>
                       </div>
-                    ))}
+                      <div className="h-2 w-full rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-emerald-500"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round(
+                                (selectedBreakdown.completionTokens /
+                                  selectedBreakdown.totalTokens) *
+                                  100
+                              )
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Token breakdown is not available for this transaction.
+                    </p>
+                  )}
+                </div>
+
+                {selected.details?.length ? (
+                  <div className="rounded-2xl border bg-background/60 p-5 space-y-3">
+                    <p className="text-sm font-semibold">Deduction breakdown</p>
+                    <div className="space-y-2 text-sm">
+                      {selected.details.map((detail, index) => (
+                        <div
+                          key={`${detail.reason}-${index}`}
+                          className="flex items-center justify-between border-b border-border/60 pb-2 last:border-b-0 last:pb-0"
+                        >
+                          <span>{detail.reason}</span>
+                          <span className="font-semibold">
+                            {Math.abs(detail.amount).toLocaleString("en-US")} credits
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {selectedReason?.projectName ? (
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Project
+                    </p>
+                    <p className="mt-2 text-sm font-semibold">
+                      {selectedReason.projectName}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Amount Credited
+                    </p>
+                    <p className="mt-2 text-2xl font-bold text-emerald-600 flex items-center gap-2">
+                      +{selected.amount.toLocaleString("en-US")}
+                      <CoinsIcon className="size-5 opacity-50" />
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border bg-background/60 p-4">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Date
+                    </p>
+                    <p className="mt-2 text-lg font-semibold">
+                      {format(selected.createdAt, "MMM d, yyyy h:mm a")}
+                    </p>
                   </div>
                 </div>
-              ) : null}
-              {selectedReason?.projectName ? (
-                <div className="rounded-2xl border bg-background/60 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Project
-                  </p>
-                  <p className="mt-2 text-sm font-semibold">
-                    {selectedReason.projectName}
-                  </p>
+
+                <div className="rounded-2xl border bg-background/60 p-5 space-y-4">
+                  <div className="space-y-1">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Paid Amount
+                    </p>
+                    <div className="text-xl font-bold font-mono text-foreground">
+                      {Math.abs(selected.amount) === 450 ? "$9.00" :
+                       Math.abs(selected.amount) === 1800 ? "$29.00" :
+                       Math.abs(selected.amount) === 7200 ? "$99.00" :
+                       "Custom Amount"}
+                    </div>
+                  </div>
+
+                   <div className="space-y-1">
+                     <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Description
+                    </p>
+                    <p className="text-sm font-medium">
+                      {selected.reason}
+                    </p>
+                  </div>
                 </div>
-              ) : null}
-            </div>
+              </div>
+            )
           ) : null}
         </DialogContent>
       </Dialog>

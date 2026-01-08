@@ -50,6 +50,7 @@ export const NotificationsList = ({
     let cancelled = false;
     if (!useRealtime && items === undefined) {
       if (!user?.id) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setStaticData([]);
         return;
       }
@@ -112,6 +113,8 @@ export const NotificationsList = ({
       {notifications.map((item) => {
         const isDeduction = item.amount < 0;
         const { baseReason, projectName } = splitCreditReason(item.reason);
+        const title = projectName ?? (isDeduction ? "Token spent" : "Token received");
+        const detail = baseReason ? formatNotificationReason(baseReason) : null;
         return (
           <div
             key={item._id}
@@ -130,13 +133,9 @@ export const NotificationsList = ({
               )}
             </div>
             <div className="flex-1 space-y-1">
-              <p className="text-sm font-semibold">
-                {projectName}
-              </p>
-              {projectName ? (
-                <p className="text-xs text-muted-foreground">
-                   {baseReason}
-                </p>
+              <p className="text-sm font-semibold">{title}</p>
+              {projectName && detail ? (
+                <p className="text-xs text-muted-foreground">{detail}</p>
               ) : null}
               <p className="text-xs text-muted-foreground">
                 {formatCreditsDelta(item.amount)}

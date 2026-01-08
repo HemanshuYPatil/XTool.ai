@@ -6,10 +6,6 @@ import {
   LayoutGrid,
   Type,
   Code,
-  Smartphone,
-  Zap,
-  Layers,
-  Box,
   Wand2,
 } from "lucide-react";
 
@@ -116,25 +112,6 @@ export const ToolsShowcase = () => {
             </div>
           </SpotlightCard>
 
-          {/* Small Cards Grid */}
-          <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-4">
-            <SpotlightCard className="flex flex-col items-center justify-center text-center">
-              <Smartphone className="w-8 h-8 text-foreground mb-3" />
-              <span className="font-semibold text-sm">Responsive</span>
-            </SpotlightCard>
-            <SpotlightCard className="flex flex-col items-center justify-center text-center">
-              <Box className="w-8 h-8 text-foreground mb-3" />
-              <span className="font-semibold text-sm">3D Assets</span>
-            </SpotlightCard>
-            <SpotlightCard className="flex flex-col items-center justify-center text-center">
-              <Layers className="w-8 h-8 text-foreground mb-3" />
-              <span className="font-semibold text-sm">Layers</span>
-            </SpotlightCard>
-            <SpotlightCard className="flex flex-col items-center justify-center text-center">
-              <Zap className="w-8 h-8 text-foreground mb-3" />
-              <span className="font-semibold text-sm">Interactions</span>
-            </SpotlightCard>
-          </div>
         </div>
       </div>
     </section>
