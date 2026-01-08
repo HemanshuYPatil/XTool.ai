@@ -128,7 +128,7 @@ export const Hero = () => {
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20"
         >
           <Link
-            href="/xtool/module-xdesign"
+            href="/xtool"
             className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-full bg-primary px-8 font-medium text-primary-foreground transition-all duration-300 hover:bg-primary/90 hover:scale-105 hover:shadow-[0_0_20px_rgba(59,130,246,0.5)]"
           >
             <span className="mr-2">Start Building</span>

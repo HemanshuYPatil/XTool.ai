@@ -2,16 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import {
-  CodeIcon,
   DownloadIcon,
   GripVertical,
   MoreHorizontalIcon,
   Trash2Icon,
-  Trash2,
-  ReplaceIcon,
-  Redo2Icon,
-  RotateCwIcon,
-  Sparkles,
   Send,
   Wand2,
   Wand2Icon,
@@ -73,6 +67,7 @@ const DeviceFrameToolbar = ({
   onRegenerate,
   onDeleteFrame,
 }: PropsType) => {
+  void onOpenHtmlDialog;
   const [promptValue, setPromptValue] = useState("");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);

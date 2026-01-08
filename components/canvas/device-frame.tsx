@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Rnd } from "react-rnd";

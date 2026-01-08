@@ -1,70 +1,57 @@
 # 📝 Project To-Do & Implementation Status
 
-This document outlines the current status of the **XDesign-Mobile-Agent-SaaS** project, highlighting implemented features, immediate pending tasks, and future roadmap items.
+This document outlines the current status of the **XDesign-Mobile-Agent-SaaS** project, based on a production readiness audit conducted on January 8, 2026.
+
+## 📊 Production Readiness Status: **Beta / Early Access**
+
+The project is functional with core features implemented, but requires critical configuration and cleanup before a public production launch.
+
+## 🔴 Critical Blockers (Must Fix)
+
+- [ ] **Billing Configuration:**
+    - The `app/api/webhooks/polar/route.ts` endpoint is explicitly disabled (returns 410).
+    - The active webhook handler appears to be `app/api/polar/webhook/route.ts` (singular). This duplication is confusing and should be cleaned up.
+    - **Action:** Delete the disabled route and ensure the active one is correctly configured in the Polar dashboard.
+- [ ] **Environment Variables:**
+    - Ensure all required variables for Kinde (`KINDE_...`), Polar (`POLAR_...`), and Database (`DATABASE_URL`) are set in the production environment.
+    - **Action:** Verify against `prisma/schema.prisma` and code usage.
+
+## ⚠️ High Priority Improvements
+
+- [ ] **Default Project Naming:**
+    - Projects default to "Q model" if the AI renaming fails or lags.
+    - **Action:** Implement a fallback random name generator (e.g., "Project-X1Y2") or ensure the UI handles the "Generating name..." state gracefully.
+- [ ] **Error Handling:**
+    - API routes often return generic 500 errors.
+    - **Action:** Implement specific error codes and messages for better client-side feedback.
+- [ ] **Clean Up Code:**
+    - **View HTML Button:** The button in `components/canvas/device-frame-toolbar.tsx` is commented out. Enable it or remove the code if not intended for release.
 
 ## ✅ Implemented Features
 
-These features are fully functional and integrated into the codebase.
-
 ### Core Architecture
-- [x] **Next.js App Router Structure:** Routing for Dashboard, Project, and Auth pages.
-- [x] **Database Schema:** Prisma models for `User`, `Project`, `Frame`, `Subscription`, and `ShareLink`.
-- [x] **Authentication:** Kinde Auth integration (`ensureUserFromKinde`).
-- [x] **Billing:** Polar.sh integration for subscription management (Free vs. Pro plans).
+- [x] **Next.js App Router:** Valid structure with `app/(routes)` and `app/api`.
+- [x] **Database:** Prisma schema is valid and covers Users, Projects, Frames, and Subscriptions.
+- [x] **Authentication:** Kinde Auth integration is present in critical API routes (`/api/project`, `/api/credits`).
+- [x] **Billing:** Polar.sh integration logic exists (plans, checkout, webhooks).
 
-### AI Generation Pipeline
-- [x] **Inngest Workflows:** `generateScreens` function with multi-step logic (Analysis -> Planning -> Contextual Generation).
-- [x] **Context Awareness:** Generates screens based on previous screens' context.
-- [x] **Asset Integration:** Unsplash tool integration for real image fetching.
-- [x] **HTML/Tailwind Output:** Robust system prompts to generate clean, isolated HTML.
+### AI Generation
+- [x] **Inngest Pipelines:** Async workflows for screen generation and project naming.
+- [x] **Context Awareness:** Logic to use previous frames as context.
+- [x] **Tools:** Unsplash integration for realistic assets.
 
-### Canvas & Workspace
-- [x] **Infinite Canvas:** `react-zoom-pan-pinch` integration for zooming and panning.
-- [x] **Device Frames:** Isolated `iframe` rendering for generated screens.
-- [x] **Frame Toolbar:**
-    - [x] **Regeneration:** AI-powered regeneration of specific frames (Popover UI + API).
-    - [x] **Deletion:** Ability to delete individual frames.
-    - [x] **Sharing:** Generating shareable links (Read-only/Edit permissions).
-    - [x] **Download:** Exporting frames as PNG images (Pro feature).
+### Canvas & UI
+- [x] **Infinite Canvas:** Zoom/Pan functionality.
+- [x] **Device Frames:** Isolated rendering for generated code.
+- [x] **Toolbar:** Regeneration, Deletion, and Sharing (Read-only/Edit).
 
-### Sharing System
-- [x] **Public Share Page:** `app/(routes)/share/[token]/page.tsx` renders shared projects/frames.
-- [x] **Permission Logic:** Distinguishes between Read-only and Edit links (though Edit flow is currently a redirect).
+## 🔮 Future Roadmap (From `future.todo`)
 
-## 🚧 To-Do: Immediate Improvements
-
-These are tasks identified from code analysis (commented out code, missing logic) that should be prioritized to complete the current feature set.
-
-- [ ] **Enable HTML Code View:**
-    - *Location:* `components/canvas/device-frame-toolbar.tsx`
-    - *Task:* Uncomment and finalize the "View HTML" button/dialog to allow developers to copy the raw code.
-- [ ] **Enhance Share "Edit" Flow:**
-    - *Location:* `app/(routes)/share/[token]/page.tsx`
-    - *Task:* Currently, the "Editable" link just prompts the user to log in. It should ideally redirect them directly to the project editor if they have permissions, or allow a "Guest Edit" mode if that's the intended design.
-- [ ] **Dashboard Mobile Responsiveness:**
-    - *Task:* Verify and improve the responsiveness of the main dashboard and project lists for smaller screens.
-- [ ] **Error Boundaries:**
-    - *Task:* Add global `error.tsx` pages to strictly handle generation failures or API timeouts gracefully in the UI.
-
-## 🔮 Future Roadmap
-
-Based on `future.todo` and architectural potential.
-
-### Phase 1: Enhanced Tooling (Planned)
-- [ ] **Version History:** Store revisions of frames on every regeneration to allow "Undo/Redo" functionality.
-- [ ] **In-Canvas Editing:** Add direct manipulation tools (Text replace, Image swap) without requiring a full AI regeneration.
-- [ ] **Export Options:** Expand export targets beyond PNG/HTML to include React components, Figma files, or Flutter widgets.
-
-### Phase 2: Collaboration & Brand (Planned)
-- [ ] **Team Workspaces:** Role-based access control (RBAC) for teams.
-- [ ] **Comments & Reviews:** Allow users to leave sticky notes/comments on frames in the canvas.
-- [ ] **Brand Kits:** Allow users to define custom color palettes, fonts, and logos that the AI *must* use during generation.
-- [ ] **Design System Controls:** Enforce consistency with component presets.
-
-### Phase 3: Analytics & Optimization
-- [ ] **Usage Analytics:** Track token usage per user/project.
-- [ ] **Prompt Library:** Save and reuse successful prompts.
-- [ ] **Accessibility Checks:** AI agent to critique and fix contrast/accessibility issues in generated HTML.
+- [ ] **Collaboration:** Team workspaces, comments, and real-time editing.
+- [ ] **Advanced Editing:** In-canvas direct manipulation (text/image replace).
+- [ ] **Brand Kits:** Custom color palettes and fonts.
+- [ ] **Export Options:** React/Tailwind code export, Figma integration.
+- [ ] **Analytics:** Usage tracking and prompt libraries.
 
 ---
-*List generated by Gemini CLI Agent based on codebase analysis.*
+*Last Updated: 2026-01-08*

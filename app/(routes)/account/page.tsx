@@ -8,11 +8,9 @@ import { CreatorLayout } from "@/components/creator/creator-layout";
 import { RealtimeCreditsValue } from "@/components/credits/realtime-credits";
 
 const AccountPage = async () => {
-  const { getUser, getClaim } = getKindeServerSession();
-  const [user, passwordClaim, mfaClaim] = await Promise.all([
+  const { getUser } = getKindeServerSession();
+  const [user] = await Promise.all([
     getUser(),
-    getClaim("pwd_changed_at", "id_token"),
-    getClaim("mfa_enabled", "id_token"),
   ]);
   if (user) {
     await ensureUserFromKinde(user);

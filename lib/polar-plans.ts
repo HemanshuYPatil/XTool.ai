@@ -3,19 +3,19 @@ export const POLAR_PLANS = {
     key: "starter",
     name: "Starter",
     credits: 450,
-    priceId: "96357ed9-a61a-4555-b034-a2552b7b8132",
+    priceId: "309a181f-073b-466d-ae6e-387cf791b5d1",
   },
   builder: {
     key: "builder",
     name: "Builder",
     credits: 1800,
-    priceId: "09c07379-a31b-4ebb-831c-52e15c8ab40b",
+    priceId: "b44c6ba1-add4-42fb-9459-2d349042f859",
   },
   studio: {
     key: "studio",
     name: "Studio",
     credits: 7200,
-    priceId: "3577b27f-478d-48b3-8db4-8b6c85c5dc66",
+    priceId: "53f2455d-e87f-4157-9d88-1f0d5f4fec26",
   },
 } as const;
 

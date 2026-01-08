@@ -41,14 +41,14 @@ const useConvexAuth = () => {
   }, [getIdTokenRaw, idTokenRaw]);
 
   const fetchAccessToken = useCallback(
-    async (_args: { forceRefreshToken: boolean }) => {
+    async (args: { forceRefreshToken: boolean }) => {
+      void args;
       try {
         const access = await getToken();
         const id = await getFallbackToken();
         const accessPayload = access?.token
           ? decodeJwtPayload(access.token)
           : null;
-        const idPayload = id?.token ? decodeJwtPayload(id.token) : null;
         const hasAccessAudience = hasAudience(accessPayload);
         const resolved =
           access && hasAccessAudience ? access : id ?? access ?? null;

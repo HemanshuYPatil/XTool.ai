@@ -4,7 +4,7 @@ import { useGetProjectById } from "@/features/use-project-id";
 import { useParams, useRouter } from "next/navigation";
 import Header from "./_common/header";
 import Canvas from "@/components/canvas";
-import { CanvasProvider, useCanvas } from "@/context/canvas-context";
+import { CanvasProvider } from "@/context/canvas-context";
 import { useEffect } from "react";
 
 const Page = () => {
@@ -85,10 +85,6 @@ const ProjectContent = ({
   project: any;
   isPending: boolean;
 }) => {
-  const { loadingStatus } = useCanvas();
-  const isDone = !isPending && (loadingStatus === "idle" || loadingStatus === "completed");
-  const showLoader = isPending || (loadingStatus && loadingStatus !== "idle" && loadingStatus !== "completed");
-
   return (
     <>
       <div className="flex flex-1 overflow-hidden">

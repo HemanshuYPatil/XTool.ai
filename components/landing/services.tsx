@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Layout, Code, Zap, Layers, MousePointer2, Terminal, Share2, Box } from "lucide-react";
+import { Layout, Code, Zap, Layers, MousePointer2, Share2 } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -114,7 +114,7 @@ export const Services = () => {
                   <p><span className="text-purple-400">export</span> <span className="text-blue-400">const</span> <span className="text-yellow-400">Button</span> = () <span className="text-blue-400">=&gt;</span> {"{"}</p>
                   <p className="pl-4"><span className="text-purple-400">return</span> (</p>
                   <p className="pl-8">&lt;<span className="text-red-400">button</span></p>
-                  <p className="pl-12"><span className="text-green-400">className</span>=<span className="text-orange-300">"px-4 py-2..."</span></p>
+                  <p className="pl-12"><span className="text-green-400">className</span>=<span className="text-orange-300">&quot;px-4 py-2...&quot;</span></p>
                   <p className="pl-8">&gt;</p>
                   <p className="pl-12">Click me</p>
                   <p className="pl-8">&lt;/<span className="text-red-400">button</span>&gt;</p>

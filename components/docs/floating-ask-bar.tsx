@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ArrowUp, Command } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface FloatingAskBarProps {

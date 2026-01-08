@@ -1,10 +1,12 @@
 import prisma from "@/lib/prisma";
+import { ModuleKey } from "@/lib/generated/prisma";
 
 export type UsageTimeframe = "daily" | "monthly" | "yearly";
 
 export type UsagePoint = {
   label: string;
   value: number;
+  date: string;
 };
 
 export type ModuleUsageSeries = {
@@ -12,6 +14,14 @@ export type ModuleUsageSeries = {
   monthly: UsagePoint[];
   yearly: UsagePoint[];
 };
+
+export type ModuleUsageSeriesByModule = {
+  daily: Record<ModuleKey, UsagePoint[]>;
+  monthly: Record<ModuleKey, UsagePoint[]>;
+  yearly: Record<ModuleKey, UsagePoint[]>;
+};
+
+const ALL_MODULES: ModuleKey[] = ["XDESIGN", "XCODE", "XCREATOR", "XTOOL"];
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -27,11 +37,11 @@ const startOfYear = (date: Date) => new Date(date.getFullYear(), 0, 1);
 
 const buildDailyBuckets = (now: Date) => {
   const buckets: { label: string; start: Date; end: Date }[] = [];
-  for (let i = 6; i >= 0; i -= 1) {
+  for (let i = 29; i >= 0; i -= 1) {
     const day = new Date(now.getTime() - i * MS_PER_DAY);
     const start = startOfDay(day);
     const end = new Date(start.getTime() + MS_PER_DAY);
-    const label = day.toLocaleDateString("en-US", { weekday: "short" });
+    const label = day.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     buckets.push({ label, start, end });
   }
   return buckets;
@@ -78,7 +88,38 @@ const aggregateUsage = (
   return buckets.map((bucket, index) => ({
     label: bucket.label,
     value: counts[index],
+    date: bucket.start.toISOString().split("T")[0] ?? bucket.label,
   }));
+};
+
+const aggregateUsageByModule = (
+  buckets: { label: string; start: Date; end: Date }[],
+  events: { usedAt: Date; units: number; module: ModuleKey }[],
+) => {
+  const countsByModule = ALL_MODULES.reduce<Record<ModuleKey, number[]>>((acc, module) => {
+    acc[module] = new Array(buckets.length).fill(0);
+    return acc;
+  }, {} as Record<ModuleKey, number[]>);
+
+  for (const event of events) {
+    const usedAt = new Date(event.usedAt);
+    for (let i = 0; i < buckets.length; i += 1) {
+      const bucket = buckets[i];
+      if (usedAt >= bucket.start && usedAt < bucket.end) {
+        countsByModule[event.module][i] += event.units;
+        break;
+      }
+    }
+  }
+
+  return ALL_MODULES.reduce<Record<ModuleKey, UsagePoint[]>>((acc, module) => {
+    acc[module] = buckets.map((bucket, index) => ({
+      label: bucket.label,
+      value: countsByModule[module][index],
+      date: bucket.start.toISOString().split("T")[0] ?? bucket.label,
+    }));
+    return acc;
+  }, {} as Record<ModuleKey, UsagePoint[]>);
 };
 
 export const recordModuleUsage = async ({
@@ -134,5 +175,38 @@ export const getModuleUsageSeries = async ({
     daily: aggregateUsage(dailyBuckets, events),
     monthly: aggregateUsage(monthlyBuckets, events),
     yearly: aggregateUsage(yearlyBuckets, events),
+  };
+};
+
+export const getAllModuleUsageSeries = async ({
+  userId,
+  now = new Date(),
+}: {
+  userId: string;
+  now?: Date;
+}): Promise<ModuleUsageSeriesByModule> => {
+  const dailyBuckets = buildDailyBuckets(now);
+  const monthlyBuckets = buildMonthlyBuckets(now);
+  const yearlyBuckets = buildYearlyBuckets(now);
+  const earliest = yearlyBuckets[0]?.start ?? startOfYear(now);
+
+  const events = await prisma.moduleUsageEvent.findMany({
+    where: {
+      userId,
+      usedAt: {
+        gte: earliest,
+      },
+    },
+    select: {
+      usedAt: true,
+      units: true,
+      module: true,
+    },
+  });
+
+  return {
+    daily: aggregateUsageByModule(dailyBuckets, events),
+    monthly: aggregateUsageByModule(monthlyBuckets, events),
+    yearly: aggregateUsageByModule(yearlyBuckets, events),
   };
 };

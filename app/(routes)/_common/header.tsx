@@ -62,7 +62,6 @@ const Header = ({
             {[
               { name: "Home", href: "/" },
               { name: "Explore", href: "/explore" },
-              { name: "Docs", href: "/docs" },
               { name: "Credits", href: "/pricing" },
             ].map((link) => (
               <Link

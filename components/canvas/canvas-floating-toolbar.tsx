@@ -5,7 +5,7 @@ import { useCanvas } from "@/context/canvas-context";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
 import PromptInput from "../prompt-input";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { parseThemeColors } from "@/lib/themes";
 import ThemeSelector from "./theme-selector";
 import { Separator } from "../ui/separator";
@@ -59,7 +59,7 @@ const CanvasFloatingToolbar = ({
   const hasDirtyFrames = frames.some((frame) => frame.isDirty);
   const hasUnsavedChanges = hasDirtyFrames || themeDirty;
 
-  const handleUpdate = async () => {
+  const handleUpdate = useCallback(async () => {
     if (!hasUnsavedChanges) return;
     if (isSavingFrames) return;
     setIsSavingFrames(true);
@@ -89,7 +89,17 @@ const CanvasFloatingToolbar = ({
     } finally {
       setIsSavingFrames(false);
     }
-  };
+  }, [
+    currentTheme,
+    frames,
+    hasUnsavedChanges,
+    isSavingFrames,
+    markThemeSaved,
+    themeDirty,
+    update,
+    updateFrameMutation,
+    updateFrameState,
+  ]);
   const isSaving = isSavingFrames || update.isPending;
 
   useEffect(() => {

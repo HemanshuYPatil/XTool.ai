@@ -72,7 +72,6 @@ export async function POST(
 
     const userId = user.id;
     await ensureUserFromKinde(user);
-    const isDev = await isDeveloper(userId);
     const project = await prisma.project.findFirst({
       where: {
         id,
@@ -84,6 +83,8 @@ export async function POST(
 
     if (!project) throw new Error("Project not found");
     await ensureUserCredits(userId);
+
+    const isDev = await isDeveloper(userId);
 
     //Trigger the Inngest
     try {
@@ -145,7 +146,6 @@ export async function PATCH(
     }
 
     const userId = user.id;
-    const isDev = await isDeveloper(userId);
 
     if (themeId) {
       await ensureUserFromKinde(user);

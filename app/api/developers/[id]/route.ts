@@ -25,7 +25,7 @@ export async function DELETE(
   try {
     await removeDeveloper(kindeId);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Developer not found" }, { status: 404 });
   }
 }

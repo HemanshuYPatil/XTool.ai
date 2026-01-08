@@ -50,9 +50,9 @@ export async function DELETE(
       success: true,
       message: "Frame deleted successfully",
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    if (error.code === "P2025") {
+  } catch (error) {
+    const errorCode = (error as { code?: string }).code;
+    if (errorCode === "P2025") {
       return NextResponse.json({ error: "Frame not found" }, { status: 404 });
     }
     return NextResponse.json(

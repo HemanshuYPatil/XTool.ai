@@ -19,6 +19,7 @@ export const StudioLoader = ({ isDone }: { isDone?: boolean }) => {
   
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const exitTriggeredRef = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -54,7 +55,9 @@ export const StudioLoader = ({ isDone }: { isDone?: boolean }) => {
   }, []);
 
   useEffect(() => {
-    if (isDone && progress > 50) {
+    if (isDone && progress > 50 && !exitTriggeredRef.current) {
+      exitTriggeredRef.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProgress(100);
       const timeout = setTimeout(() => {
         if (containerRef.current) {

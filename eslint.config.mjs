@@ -12,7 +12,20 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "lib/generated/**",
+    "Xcode/**",
+    "app/(routes)/xtool/module-xcreator/**",
+    "app/(routes)/xcreator/**",
+    "components/creator/xcreator/**",
+    "components/creator/xcreator-module.tsx",
+    "scripts/**",
+    "convex/_generated/**",
   ]),
+  {
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

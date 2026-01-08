@@ -43,7 +43,7 @@ model User {
   kindeId         String        @unique
   email           String?
   name            String?
-  credits         Int           @default(200)
+  credits         Int           @default(0)
   projects        Project[]
   shareLinks      ShareLink[]
   contributions   Contribution[]

@@ -92,30 +92,6 @@ ${body}
   </body>
 </html>`;
 
-const buildHtmlDocument = ({
-  frames,
-  themeStyle,
-  title,
-}: {
-  frames: ExportFrame[];
-  themeStyle?: string;
-  title: string;
-}) => {
-  const body = frames.length
-    ? frames
-        .map(
-          (frame) => `
-  <section data-frame="${frame.title.replace(/"/g, "&quot;")}">
-${frame.htmlContent}
-  </section>
-          `.trim()
-        )
-        .join("\n\n")
-    : `<section><div>No frames available.</div></section>`;
-
-  return buildHtmlShell({ body, title, themeStyle });
-};
-
 const buildScreenEntries = (frames: ExportFrame[]) => {
   const used = new Set<string>();
   if (frames.length === 0) {

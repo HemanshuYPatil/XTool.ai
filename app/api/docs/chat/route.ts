@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   let matches = [];
   try {
     matches = await searchDocs(lastUserMessage, 8);
-  } catch (error) {
+  } catch {
     const errorPrompt = `
 You are the XTool.ai documentation assistant. The documentation system is currently unavailable.
 Respond briefly that the docs system is offline and ask the user to try again or contact support.

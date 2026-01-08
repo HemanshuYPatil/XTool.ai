@@ -34,7 +34,7 @@ export default async function RootLayout({
     await syncRealtimeCredits({ kindeId: user.id });
   }
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${jostSans.className} antialiased`}>
         <ConvexProvider>
           <QueryProvider>

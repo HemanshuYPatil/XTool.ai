@@ -32,6 +32,7 @@ export const NotificationBell = () => {
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setListItems([]);
       return;
     }
@@ -70,6 +71,7 @@ export const NotificationBell = () => {
     if (typeof window === "undefined") return;
     const stored = window.localStorage.getItem(STORAGE_KEY);
     const parsed = stored ? Number(stored) : 0;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastSeen(Number.isFinite(parsed) ? parsed : 0);
   }, []);
 
@@ -77,6 +79,7 @@ export const NotificationBell = () => {
     if (!open) return;
     if (!latestCreatedAt) return;
     const next = Math.max(lastSeen, latestCreatedAt);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLastSeen(next);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, String(next));

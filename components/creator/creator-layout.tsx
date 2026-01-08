@@ -2,8 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CreatorSidebar } from "./creator-sidebar";
-import { SearchIcon, UserIcon } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +19,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { CreditDisplay } from "@/components/credits/credit-display";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { CreatorSearch } from "@/components/creator/creator-search";
 
 type CreatorLayoutProps = {
   children: React.ReactNode;
@@ -40,7 +40,6 @@ export function CreatorLayout({
   const breadcrumb = useMemo(() => {
     if (pathname === "/xtool") return "Dashboard";
     if (pathname === "/xtool/module-xdesign") return "XDesign";
-    if (pathname === "/xtool/module-xcode") return "XCode CLI";
     if (pathname.startsWith("/xtool/module-xcreator")) {
       if (pathname === "/xtool/module-xcreator") return "XCreator";
       if (pathname.includes("/image-clipping")) return "XCreator / Image Clipping";
@@ -76,13 +75,7 @@ export function CreatorLayout({
               <span className="text-foreground">{breadcrumb}</span>
             </nav>
 
-            <div className="relative w-80">
-              <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search modules..."
-                className="h-9 w-full rounded-full bg-muted/50 pl-10 focus-visible:ring-primary/20"
-              />
-            </div>
+            <CreatorSearch />
           </div>
 
           <div className="flex items-center gap-4">
